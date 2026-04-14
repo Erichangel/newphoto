@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ chapter_name }} - 时光印记</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(180deg, #FFF5F7 0%, #FFE4EC 40%, #FFF5F7 100%);
+    color: #4a3342;
+    margin: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  .serif { font-family: 'Noto Serif SC', serif; }
+
+  /* 浮动光晕 */
+  .glow-orb {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(80px);
+    opacity: 0.35;
+  }
+  .glow-1 { width: 400px; height: 400px; background: #FFB6C1; top: -100px; left: -100px; animation: floatGlow 12s ease-in-out infinite; }
+  .glow-2 { width: 350px; height: 350px; background: #FF69B4; bottom: -80px; right: -80px; animation: floatGlow 15s ease-in-out infinite reverse; }
+  .glow-3 { width: 250px; height: 250px; background: #FFD1DC; top: 40%; left: 50%; animation: floatGlow 10s ease-in-out infinite 3s; }
+  @keyframes floatGlow {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -20px) scale(1.1); }
+    66% { transform: translate(-20px, 15px) scale(0.95); }
+  }
+
+  /* 毛玻璃 */
+  .glass {
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+  .glass-dark {
+    background: rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+  }
+
+  /* 打字机光标 */
+  .typing-cursor::after {
+    content: '|';
+    animation: blink 1s step-end infinite;
+    color: #E91E63;
+    font-weight: 300;
+    margin-left: 2px;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* 按钮样式 */
+  .btn-pink {
+    background: linear-gradient(135deg, #E91E63, #FF6090);
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 12px rgba(233, 30, 99, 0.25);
+  }
+  .btn-pink:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(233, 30, 99, 0.4);
+  }
+  .btn-outline {
+    background: transparent;
+    color: #E91E63;
+    border: 1.5px solid #E91E63;
+    padding: 8px 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.25s ease;
+  }
+  .btn-outline:hover {
+    background: rgba(233, 30, 99, 0.08);
+  }
+  .btn-ghost {
+    background: rgba(233, 30, 99, 0.08);
+    color: #C2185B;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+  }
+  .btn-ghost:hover {
+    background: rgba(233, 30, 99, 0.15);
+  }
+  .btn-danger {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+  }
+  .btn-danger:hover { opacity: 0.9; }
+
+  /* 大图展示区 */
+  .main-display {
+    background: #1a1015;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    min-height: 250px;
+  }
+  #main-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .main-display img,
+  .main-display-img,
+  .main-display-video {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  /* 缩略图 */
+  .thumb-list {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 8px 0;
+    scrollbar-width: thin;
+    scrollbar-color: #f8bbd0 transparent;
+  }
+  .thumb-list::-webkit-scrollbar { height: 4px; }
+  .thumb-list::-webkit-scrollbar-thumb { background: #f8bbd0; border-radius: 4px; }
+  .thumb-item {
+    width: 72px;
+    height: 54px;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    flex-shrink: 0;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+    position: relative;
+  }
+  .thumb-item.active {
+    border-color: #E91E63;
+    opacity: 1;
+    box-shadow: 0 0 12px rgba(233, 30, 99, 0.3);
+  }
+  .thumb-item:hover { opacity: 1; }
+  .thumb-item img, .thumb-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* 导航切换按钮 */
+  .nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+  }
+  .nav-btn:hover { background: rgba(255, 255, 255, 0.45); }
+
+  /* 视频播放覆盖层 */
+  .video-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .video-overlay:hover { background: rgba(0, 0, 0, 0.35); }
+  .video-overlay .play-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #E91E63;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s;
+  }
+  .video-overlay:hover .play-icon { transform: scale(1.1); }
+
+  /* 文章区域 */
+  .article-panel {
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .article-view h1 { font-size: 1.4em; font-weight: 700; margin: 0.6em 0 0.3em; color: #C2185B; }
+  .article-view h2 { font-size: 1.25em; font-weight: 600; margin: 0.5em 0 0.3em; color: #D81B60; }
+  .article-view h3 { font-size: 1.1em; font-weight: 600; margin: 0.4em 0 0.2em; color: #E91E63; }
+  .article-view p { margin: 0.5em 0; line-height: 1.8; color: #5a3e4e; }
+  .article-view blockquote {
+    border-left: 3px solid #E91E63;
+    padding: 8px 16px;
+    margin: 12px 0;
+    background: rgba(233, 30, 99, 0.04);
+    border-radius: 0 8px 8px 0;
+    color: #7a5a6a;
+  }
+  .article-view strong { color: #C2185B; }
+  .article-view img { max-width: 100%; border-radius: 8px; margin: 8px 0; }
+  .article-view a { color: #E91E63; text-decoration: underline; }
+  .article-view hr { border: none; border-top: 1px solid rgba(233, 30, 99, 0.15); margin: 20px 0; }
+  .article-view ul, .article-view ol { padding-left: 20px; margin: 8px 0; }
+  .article-view li { margin: 4px 0; line-height: 1.7; color: #5a3e4e; }
+  .article-view code {
+    background: rgba(233, 30, 99, 0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #C2185B;
+  }
+  .article-view pre {
+    background: rgba(26, 16, 21, 0.05);
+    padding: 12px 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 12px 0;
+  }
+  .article-view pre code { background: none; padding: 0; }
+
+  .edit-area {
+    width: 100%;
+    min-height: 300px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1.5px solid rgba(233, 30, 99, 0.2);
+    color: #4a3342;
+    padding: 16px;
+    border-radius: 10px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 14px;
+    resize: vertical;
+    outline: none;
+    line-height: 1.7;
+    transition: border-color 0.2s;
+  }
+  .edit-area:focus { border-color: #E91E63; }
+
+  /* 灯箱 */
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 200;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .lightbox.active { display: flex; }
+  .lightbox img { max-width: 90vw; max-height: 78vh; object-fit: contain; border-radius: 8px; }
+  .lightbox video { max-width: 90vw; max-height: 78vh; border-radius: 8px; }
+  .lb-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .lb-nav:hover { background: rgba(255, 255, 255, 0.2); }
+  .lb-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .lb-close:hover { background: rgba(255, 255, 255, 0.25); }
+  .lb-thumbs {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    padding: 8px 16px;
+    background: rgba(30, 20, 25, 0.8);
+    backdrop-filter: blur(12px);
+    border-radius: 24px;
+    max-width: 80vw;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .lb-thumbs::-webkit-scrollbar { display: none; }
+  .lb-thumb {
+    width: 56px;
+    height: 42px;
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+    flex-shrink: 0;
+    border: 2px solid transparent;
+    opacity: 0.6;
+    transition: all 0.2s;
+  }
+  .lb-thumb.active { border-color: #FF6090; opacity: 1; }
+  .lb-thumb:hover { opacity: 1; }
+  .lb-thumb img, .lb-thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* 视频全屏播放器 */
+  .video-player {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 210;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .video-player.active { display: flex; }
+  .video-player video { max-width: 92vw; max-height: 75vh; border-radius: 8px; }
+  .vp-controls {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 12px 20px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-radius: 0 0 8px 8px;
+  }
+  .vp-controls button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    transition: opacity 0.2s;
+  }
+  .vp-controls button:hover { opacity: 0.7; }
+  .vp-progress {
+    flex: 1;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+  }
+  .vp-progress::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #FF6090;
+    cursor: pointer;
+  }
+  .vp-progress::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #FF6090;
+    cursor: pointer;
+    border: none;
+  }
+  .vp-volume {
+    width: 60px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+  }
+  .vp-volume::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+  }
+  .vp-volume::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    border: none;
+  }
+  .vp-time { color: rgba(255,255,255,0.7); font-size: 12px; white-space: nowrap; }
+
+  /* 弹窗 */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 150;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal-box {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 28px;
+    width: 90%;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(233, 30, 99, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+  .modal-box input[type="text"] {
+    background: rgba(255, 255, 255, 0.8);
+    border: 1.5px solid rgba(233, 30, 99, 0.15);
+    color: #4a3342;
+    padding: 10px 14px;
+    border-radius: 10px;
+    width: 100%;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .modal-box input[type="text"]:focus { border-color: #E91E63; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 24px;
+    border-radius: 12px;
+    font-size: 14px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 300;
+    color: white;
+  }
+
+  /* 空状态 */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 300px;
+    color: #c4a0b0;
+  }
+
+  /* 响应式 */
+  @media (max-width: 768px) {
+    .main-layout {
+      flex-direction: column !important;
+    }
+    .gallery-section {
+      width: 100% !important;
+    }
+    .article-section {
+      width: 100% !important;
+    }
+    .main-display {
+      min-height: 280px;
+    }
+  }
+  @media (max-width: 480px) {
+    .main-display {
+      min-height: 220px;
+    }
+    .thumb-item {
+      width: 56px;
+      height: 42px;
+    }
+    .nav-btn {
+      width: 32px;
+      height: 32px;
+      font-size: 13px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- 浮动光晕 -->
+<div class="glow-orb glow-1"></div>
+<div class="glow-orb glow-2"></div>
+<div class="glow-orb glow-3"></div>
+
+<!-- 顶部导航栏 -->
+<header class="sticky top-0 z-50 glass" style="border-bottom: 1px solid rgba(233,30,99,0.08);">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
+    <!-- 返回按钮 -->
+    <a href="/" class="w-9 h-9 rounded-full flex items-center justify-center text-sm transition-all duration-200 hover:scale-105" style="background: rgba(233,30,99,0.1); color: #E91E63;">
+      <i class="fas fa-arrow-left"></i>
+    </a>
+    <!-- 章节标题 -->
+    <h1 class="serif text-lg font-bold truncate flex-1 typing-cursor" style="color: #C2185B;">{{ chapter_name }}</h1>
+    <!-- 右侧按钮 -->
+    <div class="flex gap-2">
+      <label class="btn-pink text-sm cursor-pointer flex items-center gap-1.5">
+        <i class="fas fa-plus"></i>
+        <span class="hidden sm:inline">添加文件</span>
+        <input type="file" id="upload-input" multiple accept="image/*,video/*" class="hidden" onchange="uploadFiles(this.files)">
+      </label>
+      {% if md_content %}
+      <button id="btn-edit" onclick="toggleEdit()" class="btn-ghost text-sm flex items-center gap-1.5">
+        <i class="fas fa-pen"></i>
+        <span class="hidden sm:inline">编辑文章</span>
+      </button>
+      {% endif %}
+      {% if not md_content %}
+      <button onclick="startNewArticle()" class="btn-ghost text-sm flex items-center gap-1.5">
+        <i class="fas fa-feather-alt"></i>
+        <span class="hidden sm:inline">写文章</span>
+      </button>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+<!-- 主内容区 -->
+<div class="max-w-7xl mx-auto px-4 py-5 relative z-10">
+  <div class="main-layout" style="display: flex; gap: 8px; height: calc(100vh - 200px);">
+
+    <!-- 左侧画廊区域 -->
+    <div class="gallery-section" style="width: 60%; display: flex; flex-direction: column; gap: 8px;">
+      {% if files %}
+      <!-- 大图展示区 -->
+      <div class="main-display" id="main-display">
+        <button class="nav-btn" style="left: 12px;" onclick="navFile(-1)"><i class="fas fa-chevron-left"></i></button>
+        <button class="nav-btn" style="right: 12px;" onclick="navFile(1)"><i class="fas fa-chevron-right"></i></button>
+        <button onclick="openLightbox()" style="position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.2);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.25);color:white;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+          <i class="fas fa-expand"></i>
+        </button>
+        <div id="main-content"></div>
+      </div>
+
+      <!-- 缩略图列表 -->
+      <div class="thumb-list" id="thumb-list"></div>
+      {% else %}
+      <!-- 空状态 -->
+      <div class="main-display">
+        <div class="empty-state">
+          <i class="fas fa-images" style="font-size: 48px; margin-bottom: 16px; opacity: 0.4;"></i>
+          <p style="font-size: 16px; margin-bottom: 6px;">还没有图片或视频</p>
+          <p style="font-size: 13px; opacity: 0.6;">点击上方"添加文件"按钮上传</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- 右侧文章区域 -->
+    <div class="article-section" style="width: 40%; display: flex; flex-direction: column;">
+      <div class="article-panel glass" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+        <!-- 文章标题栏 -->
+        <div style="padding: 16px 20px 12px; border-bottom: 1px solid rgba(233,30,99,0.08); display: flex; align-items: center; justify-content: space-between;">
+          <h2 class="serif" style="font-size: 15px; font-weight: 600; color: #C2185B; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-feather-alt" style="font-size: 13px; color: #D4A574;"></i>
+            {% if md_name %}{{ md_name }}{% else %}文章{% endif %}
+          </h2>
+          <div style="display: flex; gap: 6px;">
+            {% if md_content %}
+            <button id="btn-edit-inner" onclick="toggleEdit()" class="btn-ghost" style="padding: 5px 12px; font-size: 12px;">
+              <i class="fas fa-pen"></i> 编辑
+            </button>
+            {% endif %}
+            {% if not md_content %}
+            <button onclick="startNewArticle()" class="btn-ghost" style="padding: 5px 12px; font-size: 12px;">
+              <i class="fas fa-plus"></i> 新建
+            </button>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- 文章内容 -->
+        <div style="flex: 1; overflow-y: auto; padding: 16px 20px;">
+          <!-- 预览模式 -->
+          <div id="article-preview" class="article-view" style="font-size: 14px; line-height: 1.8;">
+            {% if md_html %}
+              {{ md_html|safe }}
+            {% else %}
+              <div style="text-align: center; padding: 40px 0; color: #c4a0b0;">
+                <i class="fas fa-feather-alt" style="font-size: 32px; margin-bottom: 12px; opacity: 0.3; display: block;"></i>
+                <p>暂无文章</p>
+                <p style="font-size: 12px; margin-top: 4px; opacity: 0.6;">点击"新建"开始书写回忆</p>
+              </div>
+            {% endif %}
+          </div>
+          <!-- 编辑模式 -->
+          <div id="article-edit" style="display: none;">
+            <textarea id="edit-area" class="edit-area">{{ md_content or '' }}</textarea>
+            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
+              <button onclick="cancelEdit()" class="btn-outline" style="padding: 6px 16px; font-size: 13px;">取消</button>
+              <button onclick="saveArticle()" class="btn-pink" style="padding: 6px 16px; font-size: 13px;">保存</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部导航 -->
+  <div style="display: flex; justify-content: center; gap: 16px; padding: 20px 0 10px;">
+    {% if prev_chapter %}
+    <a href="/chapter/{{ prev_chapter }}" class="btn-outline" style="display: flex; align-items: center; gap: 8px; text-decoration: none;">
+      <i class="fas fa-chevron-left" style="font-size: 11px;"></i>
+      {{ prev_chapter }}
+    </a>
+    {% endif %}
+    {% if next_chapter %}
+    <a href="/chapter/{{ next_chapter }}" class="btn-outline" style="display: flex; align-items: center; gap: 8px; text-decoration: none;">
+      {{ next_chapter }}
+      <i class="fas fa-chevron-right" style="font-size: 11px;"></i>
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- 全屏灯箱 -->
+<div id="lightbox" class="lightbox" onclick="closeLightbox()">
+  <button class="lb-close" onclick="closeLightbox()"><i class="fas fa-times"></i></button>
+  <button class="lb-nav" style="left: 20px;" onclick="event.stopPropagation(); navLightbox(-1)"><i class="fas fa-chevron-left"></i></button>
+  <div id="lb-content" style="display: flex; align-items: center; justify-content: center;"></div>
+  <button class="lb-nav" style="right: 20px;" onclick="event.stopPropagation(); navLightbox(1)"><i class="fas fa-chevron-right"></i></button>
+  <div class="lb-thumbs" id="lb-thumbs" onclick="event.stopPropagation()"></div>
+</div>
+
+<!-- 视频全屏播放器 -->
+<div id="video-player" class="video-player">
+  <button onclick="closeVideoPlayer()" style="position:absolute;top:16px;right:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+    <i class="fas fa-times"></i>
+  </button>
+  <video id="vp-video" onclick="togglePlayPause()"></video>
+  <div class="vp-controls">
+    <button id="vp-play-btn" onclick="togglePlayPause()"><i class="fas fa-play"></i></button>
+    <span class="vp-time" id="vp-current">0:00</span>
+    <input type="range" class="vp-progress" id="vp-progress" min="0" max="100" value="0" oninput="seekVideo(this.value)">
+    <span class="vp-time" id="vp-duration">0:00</span>
+    <button onclick="toggleMute()" id="vp-mute-btn"><i class="fas fa-volume-up"></i></button>
+    <input type="range" class="vp-volume" id="vp-volume" min="0" max="100" value="80" oninput="changeVolume(this.value)">
+    <button onclick="toggleFullscreen()" title="全屏"><i class="fas fa-expand"></i></button>
+  </div>
+</div>
+
+<!-- 重命名文件弹窗 -->
+<div id="modal-rename-file" class="modal-overlay" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="modal-box">
+    <h3 class="serif" style="font-size: 18px; font-weight: 700; color: #C2185B; margin-bottom: 16px;">重命名文件</h3>
+    <input type="text" id="rf-old" style="display:none;">
+    <input type="text" id="rf-new" placeholder="输入新文件名" onkeydown="if(event.key==='Enter')renameFile()">
+    <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+      <button onclick="document.getElementById('modal-rename-file').classList.remove('active')" class="btn-outline">取消</button>
+      <button onclick="renameFile()" class="btn-pink">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- 删除文件弹窗 -->
+<div id="modal-delete-file" class="modal-overlay" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="modal-box">
+    <h3 class="serif" style="font-size: 18px; font-weight: 700; color: #dc2626; margin-bottom: 8px;">确认删除</h3>
+    <p style="color: #7a5a6a; margin-bottom: 20px; line-height: 1.6;">确定要删除 "<span id="df-name" style="color: #C2185B; font-weight: 600;"></span>" 吗？<br><span style="font-size: 12px; color: #c4a0b0;">此操作不可恢复</span></p>
+    <input type="text" id="df-path" style="display:none;">
+    <div style="display: flex; justify-content: flex-end; gap: 8px;">
+      <button onclick="document.getElementById('modal-delete-file').classList.remove('active')" class="btn-outline">取消</button>
+      <button onclick="deleteFile()" class="btn-danger">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script>
+// 文件数据
+const files = [
+  {% for f in files %}
+  { name: '{{ f.name }}', path: '{{ f.path|replace('\\', '/') }}', type: '{{ f.type }}' },
+  {% endfor %}
+];
+let currentIdx = 0;
+
+// 初始化画廊
+function initGallery() {
+  if (!files.length) return;
+  updateMainDisplay();
+  renderThumbnails();
+}
+
+function updateMainDisplay() {
+  const f = files[currentIdx];
+  const container = document.getElementById('main-content');
+  if (!f) { container.innerHTML = ''; return; }
+
+  if (f.type === 'image') {
+    container.innerHTML = '<img src="/file/' + encodeURIComponent(f.path) + '" alt="' + f.name + '" class="main-display-img">';
+  } else {
+    container.innerHTML = '<video src="/file/' + encodeURIComponent(f.path) + '" preload="metadata" class="main-display-video"></video>' +
+      '<div class="video-overlay" onclick="openVideoPlayer()">' +
+        '<div class="play-icon"><i class="fas fa-play" style="margin-left:3px;"></i></div>' +
+      '</div>';
+  }
+  // 更新缩略图选中状态
+  document.querySelectorAll('.thumb-item').forEach((el, i) => {
+    el.classList.toggle('active', i === currentIdx);
+  });
+  // 滚动缩略图到可见
+  const activeThumb = document.querySelector('.thumb-item.active');
+  if (activeThumb) activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+}
+
+function renderThumbnails() {
+  const list = document.getElementById('thumb-list');
+  list.innerHTML = files.map((f, i) => {
+    if (f.type === 'image') {
+      return '<div class="thumb-item' + (i === currentIdx ? ' active' : '') + '" onclick="currentIdx=' + i + ';updateMainDisplay();">' +
+        '<img src="/file/' + encodeURIComponent(f.path) + '" alt="' + f.name + '" loading="lazy">' +
+      '</div>';
+    } else {
+      return '<div class="thumb-item' + (i === currentIdx ? ' active' : '') + '" onclick="currentIdx=' + i + ';updateMainDisplay();">' +
+        '<video src="/file/' + encodeURIComponent(f.path) + '" preload="metadata"></video>' +
+        '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);font-size:14px;color:white;pointer-events:none;"><i class="fas fa-play"></i></div>' +
+      '</div>';
+    }
+  }).join('');
+}
+
+function navFile(dir) {
+  if (!files.length) return;
+  currentIdx = (currentIdx + dir + files.length) % files.length;
+  updateMainDisplay();
+}
+
+// 灯箱
+function openLightbox() {
+  if (!files.length) return;
+  updateLightboxContent();
+  renderLightboxThumbs();
+  document.getElementById('lightbox').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('active');
+  document.body.style.overflow = '';
+  const v = document.querySelector('#lb-content video');
+  if (v) v.pause();
+}
+function navLightbox(dir) {
+  currentIdx = (currentIdx + dir + files.length) % files.length;
+  updateLightboxContent();
+  renderLightboxThumbs();
+  updateMainDisplay();
+}
+function updateLightboxContent() {
+  const f = files[currentIdx];
+  const container = document.getElementById('lb-content');
+  if (f.type === 'image') {
+    container.innerHTML = '<img src="/file/' + encodeURIComponent(f.path) + '" onclick="event.stopPropagation()">';
+  } else {
+    container.innerHTML = '<video src="/file/' + encodeURIComponent(f.path) + '" controls autoplay onclick="event.stopPropagation()" style="max-width:90vw;max-height:78vh;border-radius:8px;"></video>';
+  }
+}
+function renderLightboxThumbs() {
+  const container = document.getElementById('lb-thumbs');
+  container.innerHTML = files.map((f, i) => {
+    const active = i === currentIdx ? ' active' : '';
+    if (f.type === 'image') {
+      return '<div class="lb-thumb' + active + '" onclick="currentIdx=' + i + ';updateLightboxContent();renderLightboxThumbs();updateMainDisplay();">' +
+        '<img src="/file/' + encodeURIComponent(f.path) + '" loading="lazy">' +
+      '</div>';
+    } else {
+      return '<div class="lb-thumb' + active + '" onclick="currentIdx=' + i + ';updateLightboxContent();renderLightboxThumbs();updateMainDisplay();">' +
+        '<video src="/file/' + encodeURIComponent(f.path) + '" preload="metadata"></video>' +
+      '</div>';
+    }
+  }).join('');
+}
+
+// 视频全屏播放器
+function openVideoPlayer() {
+  const f = files[currentIdx];
+  if (!f || f.type !== 'video') return;
+  const player = document.getElementById('video-player');
+  const video = document.getElementById('vp-video');
+  video.src = '/file/' + encodeURIComponent(f.path);
+  player.classList.add('active');
+  document.body.style.overflow = 'hidden';
+  video.play().then(() => {
+    document.getElementById('vp-play-btn').innerHTML = '<i class="fas fa-pause"></i>';
+  }).catch(() => {});
+}
+function closeVideoPlayer() {
+  const player = document.getElementById('video-player');
+  const video = document.getElementById('vp-video');
+  video.pause();
+  video.src = '';
+  player.classList.remove('active');
+  document.body.style.overflow = '';
+}
+function togglePlayPause() {
+  const video = document.getElementById('vp-video');
+  if (video.paused) {
+    video.play();
+    document.getElementById('vp-play-btn').innerHTML = '<i class="fas fa-pause"></i>';
+  } else {
+    video.pause();
+    document.getElementById('vp-play-btn').innerHTML = '<i class="fas fa-play"></i>';
+  }
+}
+function seekVideo(val) {
+  const video = document.getElementById('vp-video');
+  if (video.duration) video.currentTime = (val / 100) * video.duration;
+}
+function changeVolume(val) {
+  const video = document.getElementById('vp-video');
+  video.volume = val / 100;
+  video.muted = false;
+  updateMuteIcon();
+}
+function toggleMute() {
+  const video = document.getElementById('vp-video');
+  video.muted = !video.muted;
+  updateMuteIcon();
+}
+function updateMuteIcon() {
+  const video = document.getElementById('vp-video');
+  const btn = document.getElementById('vp-mute-btn');
+  if (video.muted || video.volume === 0) {
+    btn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+  } else if (video.volume < 0.5) {
+    btn.innerHTML = '<i class="fas fa-volume-down"></i>';
+  } else {
+    btn.innerHTML = '<i class="fas fa-volume-up"></i>';
+  }
+}
+function toggleFullscreen() {
+  const player = document.getElementById('video-player');
+  if (document.fullscreenElement) {
+    document.exitFullscreen();
+  } else {
+    player.requestFullscreen().catch(() => {});
+  }
+}
+function formatTime(s) {
+  if (isNaN(s)) return '0:00';
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return m + ':' + (sec < 10 ? '0' : '') + sec;
+}
+// 视频时间更新
+setInterval(() => {
+  const video = document.getElementById('vp-video');
+  if (video && video.duration) {
+    document.getElementById('vp-progress').value = (video.currentTime / video.duration) * 100;
+    document.getElementById('vp-current').textContent = formatTime(video.currentTime);
+    document.getElementById('vp-duration').textContent = formatTime(video.duration);
+  }
+}, 250);
+
+// 键盘导航
+document.addEventListener('keydown', e => {
+  // 灯箱
+  if (document.getElementById('lightbox').classList.contains('active')) {
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') navLightbox(-1);
+    if (e.key === 'ArrowRight') navLightbox(1);
+    return;
+  }
+  // 视频播放器
+  if (document.getElementById('video-player').classList.contains('active')) {
+    if (e.key === 'Escape') closeVideoPlayer();
+    if (e.key === ' ') { e.preventDefault(); togglePlayPause(); }
+    if (e.key === 'ArrowLeft') {
+      const v = document.getElementById('vp-video');
+      v.currentTime = Math.max(0, v.currentTime - 5);
+    }
+    if (e.key === 'ArrowRight') {
+      const v = document.getElementById('vp-video');
+      v.currentTime = Math.min(v.duration, v.currentTime + 5);
+    }
+    return;
+  }
+  // 主画廊
+  if (!document.querySelector('.modal-overlay.active') && !editing) {
+    if (e.key === 'ArrowLeft') navFile(-1);
+    if (e.key === 'ArrowRight') navFile(1);
+  }
+});
+
+// 文件操作
+function showRenameFile(path, name) {
+  document.getElementById('rf-old').value = path;
+  document.getElementById('rf-new').value = name;
+  document.getElementById('modal-rename-file').classList.add('active');
+  setTimeout(() => { const inp = document.getElementById('rf-new'); inp.focus(); inp.select(); }, 100);
+}
+function confirmDeleteFile(path, name) {
+  document.getElementById('df-name').textContent = name;
+  document.getElementById('df-path').value = path;
+  document.getElementById('modal-delete-file').classList.add('active');
+}
+async function renameFile() {
+  const old_path = document.getElementById('rf-old').value;
+  const new_name = document.getElementById('rf-new').value.trim();
+  if (!new_name) return;
+  const res = await fetch('/api/file/rename', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ old_path, new_name }) });
+  const data = await res.json();
+  if (data.ok) toast('重命名成功'); else toast(data.error || '失败', true);
+  setTimeout(() => location.reload(), 500);
+}
+async function deleteFile() {
+  const path = document.getElementById('df-path').value;
+  const res = await fetch('/api/file/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ path }) });
+  const data = await res.json();
+  if (data.ok) toast('已删除'); else toast(data.error || '失败', true);
+  setTimeout(() => location.reload(), 500);
+}
+async function uploadFiles(fileList) {
+  if (!fileList.length) return;
+  const fd = new FormData();
+  fd.append('chapter', '{{ chapter_name }}');
+  for (const f of fileList) fd.append('files', f);
+  const res = await fetch('/api/file/upload', { method: 'POST', body: fd });
+  const data = await res.json();
+  if (data.ok) toast('上传了 ' + data.saved.length + ' 个文件'); else toast(data.error || '失败', true);
+  setTimeout(() => location.reload(), 800);
+}
+
+// 文章编辑
+let editing = false;
+function toggleEdit() {
+  editing = !editing;
+  document.getElementById('article-preview').style.display = editing ? 'none' : 'block';
+  document.getElementById('article-edit').style.display = editing ? 'block' : 'none';
+  const text = editing ? '<i class="fas fa-eye"></i> 预览' : '<i class="fas fa-pen"></i> 编辑';
+  const btnEdit = document.getElementById('btn-edit');
+  const btnEditInner = document.getElementById('btn-edit-inner');
+  if (btnEdit) btnEdit.innerHTML = text;
+  if (btnEditInner) btnEditInner.innerHTML = text;
+}
+function cancelEdit() {
+  document.getElementById('edit-area').value = `{{ md_content or '' }}`.replace(/&#39;/g, "'").replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  toggleEdit();
+}
+function startNewArticle() {
+  document.getElementById('edit-area').value = '# {{ chapter_name }}\n\n在这里写下你的回忆...\n';
+  editing = false;
+  toggleEdit();
+}
+async function saveArticle() {
+  const content = document.getElementById('edit-area').value;
+  const res = await fetch('/api/article/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ chapter: '{{ chapter_name }}', content }) });
+  const data = await res.json();
+  if (data.ok) toast('保存成功'); else toast(data.error || '失败', true);
+  setTimeout(() => location.reload(), 500);
+}
+
+// Toast
+function toast(msg, err) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = err ? 'linear-gradient(135deg, #dc2626, #ef4444)' : 'linear-gradient(135deg, #E91E63, #FF6090)';
+  t.style.opacity = '1';
+  setTimeout(() => t.style.opacity = '0', 2500);
+}
+
+// 保存最后访问的章节
+localStorage.setItem('lastChapter', '{{ chapter_name }}');
+
+// 初始化
+initGallery();
+</script>
+</body>
+</html>

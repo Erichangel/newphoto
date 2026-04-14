@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>时光印记</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Noto Serif SC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style>
+    /* ========== 全局基础样式 ========== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(180deg, #FFF5F7 0%, #FFE4EC 50%, #FFF5F7 100%);
+      color: #333;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* 标题衬线字体 */
+    .font-serif-title {
+      font-family: 'Noto Serif SC', serif;
+    }
+
+    /* ========== 毛玻璃卡片 ========== */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow: 0 8px 32px rgba(233, 30, 99, 0.1);
+    }
+
+    /* ========== 浮动光晕装饰 ========== */
+    .glow-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.25;
+      pointer-events: none;
+      z-index: 0;
+      animation: floatOrb 8s ease-in-out infinite;
+    }
+
+    .glow-orb-1 {
+      width: 300px;
+      height: 300px;
+      background: #FFB6C1;
+      top: 10%;
+      left: -5%;
+      animation-delay: 0s;
+    }
+
+    .glow-orb-2 {
+      width: 250px;
+      height: 250px;
+      background: #FFDAB9;
+      top: 40%;
+      right: -8%;
+      animation-delay: -3s;
+    }
+
+    .glow-orb-3 {
+      width: 200px;
+      height: 200px;
+      background: #FFC0CB;
+      bottom: 15%;
+      left: 20%;
+      animation-delay: -5s;
+    }
+
+    @keyframes floatOrb {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -20px) scale(1.1); }
+      66% { transform: translate(-20px, 15px) scale(0.9); }
+    }
+
+    /* ========== 顶部固定栏 ========== */
+    .top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 245, 247, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(233, 30, 99, 0.08);
+    }
+
+    .top-bar-title {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #E91E63, #FF6090);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .top-bar-title i {
+      -webkit-text-fill-color: #E91E63;
+      font-size: 1.1rem;
+    }
+
+    /* ========== 按钮样式 ========== */
+    .btn-pink-gradient {
+      background: linear-gradient(135deg, #E91E63, #FF6090);
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 50px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 16px rgba(233, 30, 99, 0.25);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+    }
+
+    .btn-pink-gradient:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(233, 30, 99, 0.35);
+    }
+
+    .btn-ghost-pink {
+      background: rgba(233, 30, 99, 0.08);
+      color: #E91E63;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 50px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-ghost-pink:hover {
+      background: rgba(233, 30, 99, 0.15);
+    }
+
+    /* ========== 时间线区域 ========== */
+    .timeline-container {
+      position: relative;
+      padding: 100px 20px 120px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* 时间线中轴线 */
+    .timeline-line {
+      position: absolute;
+      left: 50%;
+      top: 100px;
+      bottom: 120px;
+      width: 3px;
+      background: linear-gradient(180deg, #E91E63, #D4A574, #E91E63);
+      transform: translateX(-50%);
+      border-radius: 2px;
+    }
+
+    /* 时间线节点 */
+    .timeline-node {
+      display: flex;
+      align-items: center;
+      margin-bottom: 60px;
+      position: relative;
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+
+    .timeline-node.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .timeline-node:nth-child(odd) {
+      flex-direction: row;
+    }
+
+    .timeline-node:nth-child(even) {
+      flex-direction: row-reverse;
+    }
+
+    /* 时间线内容区 */
+    .timeline-content {
+      width: 42%;
+      padding: 20px;
+      cursor: pointer;
+    }
+
+    .timeline-node:nth-child(odd) .timeline-content {
+      text-align: right;
+      margin-right: auto;
+    }
+
+    .timeline-node:nth-child(even) .timeline-content {
+      text-align: left;
+      margin-left: auto;
+    }
+
+    .timeline-content .chapter-name {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 6px;
+      transition: color 0.3s ease;
+    }
+
+    .timeline-content:hover .chapter-name {
+      color: #E91E63;
+    }
+
+    .timeline-content .chapter-stats {
+      font-size: 0.8rem;
+      color: #999;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .timeline-node:nth-child(odd) .chapter-stats {
+      justify-content: flex-end;
+    }
+
+    .timeline-node:nth-child(even) .chapter-stats {
+      justify-content: flex-start;
+    }
+
+    /* 时间线圆点 */
+    .timeline-dot {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #E91E63, #FF6090);
+      box-shadow: 0 0 20px rgba(233, 30, 99, 0.4), 0 0 40px rgba(233, 30, 99, 0.2);
+      z-index: 2;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .timeline-dot:hover {
+      transform: translateX(-50%) scale(1.4);
+      box-shadow: 0 0 30px rgba(233, 30, 99, 0.6), 0 0 60px rgba(233, 30, 99, 0.3);
+    }
+
+    /* 时间线缩略图 */
+    .timeline-thumb {
+      width: 42%;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .timeline-thumb:hover {
+      transform: scale(1.03);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    .timeline-thumb img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .timeline-thumb .no-cover {
+      width: 100%;
+      height: 160px;
+      background: linear-gradient(135deg, #FFE4EC, #FFF0F5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+    }
+
+    /* 节点悬停操作按钮 */
+    .node-actions {
+      position: absolute;
+      top: 0;
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 5;
+    }
+
+    .timeline-node:nth-child(odd) .node-actions {
+      right: calc(58% + 8px);
+    }
+
+    .timeline-node:nth-child(even) .node-actions {
+      left: calc(58% + 8px);
+    }
+
+    .timeline-node:hover .node-actions {
+      opacity: 1;
+    }
+
+    .node-action-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .node-action-btn.rename-btn {
+      background: white;
+      color: #E91E63;
+    }
+
+    .node-action-btn.rename-btn:hover {
+      background: #E91E63;
+      color: white;
+    }
+
+    .node-action-btn.delete-btn {
+      background: white;
+      color: #dc2626;
+    }
+
+    .node-action-btn.delete-btn:hover {
+      background: #dc2626;
+      color: white;
+    }
+
+    /* ========== 弹窗样式 ========== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(233, 30, 99, 0.15);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-box {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: 20px;
+      padding: 28px;
+      width: 90%;
+      max-width: 420px;
+      box-shadow: 0 12px 48px rgba(233, 30, 99, 0.15);
+    }
+
+    .modal-box h3 {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 16px;
+    }
+
+    .modal-box label {
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .modal-box input[type="text"] {
+      background: rgba(255, 255, 255, 0.8);
+      border: 1.5px solid rgba(233, 30, 99, 0.15);
+      color: #333;
+      padding: 10px 14px;
+      border-radius: 12px;
+      width: 100%;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .modal-box input[type="text"]:focus {
+      border-color: #E91E63;
+    }
+
+    .modal-box input[type="text"]::placeholder {
+      color: #ccc;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .modal-btn {
+      padding: 9px 22px;
+      border-radius: 50px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .modal-btn-cancel {
+      background: rgba(233, 30, 99, 0.08);
+      color: #E91E63;
+    }
+
+    .modal-btn-cancel:hover {
+      background: rgba(233, 30, 99, 0.15);
+    }
+
+    .modal-btn-confirm {
+      background: linear-gradient(135deg, #E91E63, #FF6090);
+      color: white;
+      box-shadow: 0 4px 12px rgba(233, 30, 99, 0.25);
+    }
+
+    .modal-btn-confirm:hover {
+      box-shadow: 0 6px 18px rgba(233, 30, 99, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .modal-btn-danger {
+      background: linear-gradient(135deg, #dc2626, #ef4444);
+      color: white;
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+    }
+
+    .modal-btn-danger:hover {
+      box-shadow: 0 6px 18px rgba(220, 38, 38, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .modal-hint {
+      font-size: 0.75rem;
+      color: #aaa;
+      margin-top: 6px;
+    }
+
+    .modal-warning {
+      font-size: 0.8rem;
+      color: #dc2626;
+      margin-top: 4px;
+    }
+
+    /* ========== 空状态 ========== */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: #bbb;
+    }
+
+    .empty-state .empty-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.6;
+    }
+
+    .empty-state p {
+      font-size: 0.95rem;
+    }
+
+    /* ========== Toast ========== */
+    #toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 24px;
+      border-radius: 50px;
+      font-size: 13px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+      transition: all 0.3s ease;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 200;
+      color: white;
+    }
+
+    /* ========== 响应式 ========== */
+    @media (max-width: 768px) {
+      .timeline-line {
+        left: 24px;
+      }
+
+      .timeline-dot {
+        left: 24px;
+      }
+
+      .timeline-node,
+      .timeline-node:nth-child(odd),
+      .timeline-node:nth-child(even) {
+        flex-direction: row !important;
+        padding-left: 56px;
+      }
+
+      .timeline-content,
+      .timeline-node:nth-child(odd) .timeline-content,
+      .timeline-node:nth-child(even) .timeline-content {
+        width: 100%;
+        text-align: left !important;
+        margin: 0 !important;
+        padding: 12px 0;
+      }
+
+      .timeline-thumb {
+        width: 100%;
+      }
+
+      .timeline-node:nth-child(odd) .chapter-stats,
+      .timeline-node:nth-child(even) .chapter-stats {
+        justify-content: flex-start !important;
+      }
+
+      .node-actions,
+      .timeline-node:nth-child(odd) .node-actions,
+      .timeline-node:nth-child(even) .node-actions {
+        right: auto !important;
+        left: auto !important;
+        top: auto;
+        bottom: -4px;
+        right: 8px !important;
+      }
+
+      .top-bar {
+        padding: 12px 16px;
+      }
+
+      .top-bar-title {
+        font-size: 1.15rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .top-bar-title {
+        font-size: 1rem;
+      }
+
+      .top-bar-title span {
+        display: none;
+      }
+
+      .btn-pink-gradient span {
+        display: none;
+      }
+
+      .timeline-content .chapter-name {
+        font-size: 1rem;
+      }
+
+      .timeline-thumb img,
+      .timeline-thumb .no-cover {
+        height: 130px;
+      }
+
+      .timeline-node {
+        margin-bottom: 40px;
+      }
+
+      .modal-box {
+        padding: 22px;
+        margin: 0 16px;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- 浮动光晕装饰 -->
+  <div class="glow-orb glow-orb-1"></div>
+  <div class="glow-orb glow-orb-2"></div>
+  <div class="glow-orb glow-orb-3"></div>
+
+  <!-- 顶部固定栏 -->
+  <header class="top-bar">
+    <div class="top-bar-title">
+      <i class="fas fa-heart"></i>
+      <span>时光印记</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-xs text-gray-400 hidden sm:inline" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ root_dir }}</span>
+      <button id="btn-continue" onclick="continueMemory()" class="btn-pink-gradient" style="display: none;">
+        <i class="fas fa-history"></i>
+        <span>继续回忆</span>
+      </button>
+      <button onclick="showModal('settings')" class="btn-ghost-pink" title="设置">
+        <i class="fas fa-cog"></i>
+        <span class="hidden sm:inline">设置</span>
+      </button>
+      <button onclick="showModal('create')" class="btn-pink-gradient">
+        <i class="fas fa-plus"></i>
+        <span>新建章节</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 时间线区域 -->
+  <main class="timeline-container">
+    <div class="timeline-line"></div>
+
+    {% for ch in chapters %}
+    <div class="timeline-node" onclick="location.href='/chapter/{{ ch.name }}'">
+      <!-- 悬停操作 -->
+      <div class="node-actions" onclick="event.stopPropagation()">
+        <button class="node-action-btn rename-btn" onclick="showRenameChapter('{{ ch.name }}')" title="重命名">
+          <i class="fas fa-pen"></i>
+        </button>
+        <button class="node-action-btn delete-btn" onclick="confirmDeleteChapter('{{ ch.name }}')" title="删除">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+
+      <!-- 奇数节点：左侧文字 + 右侧缩略图 -->
+      <!-- 偶数节点：左侧缩略图 + 右侧文字（通过 CSS row-reverse 实现） -->
+      <div class="timeline-content">
+        <div class="chapter-name">{{ ch.name }}</div>
+        <div class="chapter-stats">
+          <span>{{ ch.image_count }}图</span>
+          <span>{{ ch.video_count }}视频</span>
+          {% if ch.has_article %}<span>&#x1F4DD;</span>{% endif %}
+        </div>
+      </div>
+
+      <div class="timeline-dot"></div>
+
+      <div class="timeline-thumb">
+        {% if ch.cover %}
+          <img src="{{ ch.cover }}" alt="{{ ch.name }}">
+        {% else %}
+          <div class="no-cover">&#x1F4F7;</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+
+    {% if not chapters %}
+    <div class="empty-state">
+      <div class="empty-icon">&#x1F4C2;</div>
+      <p>还没有章节，点击右上角"新建章节"开始记录美好时光</p>
+    </div>
+    {% endif %}
+  </main>
+
+  <!-- 新建章节弹窗 -->
+  <div id="modal-create" class="modal-overlay" onclick="if(event.target===this)closeModals()">
+    <div class="modal-box">
+      <h3><i class="fas fa-plus-circle" style="color: #E91E63; margin-right: 6px;"></i>新建章节</h3>
+      <input type="text" id="new-chapter-name" placeholder="输入章节名称（即文件夹名）" onkeydown="if(event.key==='Enter')createChapter()">
+      <div class="modal-actions">
+        <button onclick="closeModals()" class="modal-btn modal-btn-cancel">取消</button>
+        <button onclick="createChapter()" class="modal-btn modal-btn-confirm">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 重命名弹窗 -->
+  <div id="modal-rename" class="modal-overlay" onclick="if(event.target===this)closeModals()">
+    <div class="modal-box">
+      <h3><i class="fas fa-pen-fancy" style="color: #E91E63; margin-right: 6px;"></i>重命名章节</h3>
+      <input type="text" id="rename-old" style="display:none;">
+      <input type="text" id="rename-new" placeholder="输入新名称" onkeydown="if(event.key==='Enter')renameChapter()">
+      <div class="modal-actions">
+        <button onclick="closeModals()" class="modal-btn modal-btn-cancel">取消</button>
+        <button onclick="renameChapter()" class="modal-btn modal-btn-confirm">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 删除确认弹窗 -->
+  <div id="modal-delete" class="modal-overlay" onclick="if(event.target===this)closeModals()">
+    <div class="modal-box">
+      <h3 style="color: #dc2626;"><i class="fas fa-exclamation-triangle" style="margin-right: 6px;"></i>确认删除</h3>
+      <p style="color: #666; font-size: 0.9rem; margin-bottom: 4px;">确定要删除章节 "<span id="delete-name" style="font-weight: 600; color: #333;"></span>" 吗？</p>
+      <p class="modal-warning">此操作不可恢复，文件夹内所有文件将被删除！</p>
+      <input type="text" id="delete-target" style="display:none;">
+      <div class="modal-actions">
+        <button onclick="closeModals()" class="modal-btn modal-btn-cancel">取消</button>
+        <button onclick="deleteChapter()" class="modal-btn modal-btn-danger">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 设置弹窗 -->
+  <div id="modal-settings" class="modal-overlay" onclick="if(event.target===this)closeModals()">
+    <div class="modal-box">
+      <h3><i class="fas fa-cog" style="color: #E91E63; margin-right: 6px;"></i>设置</h3>
+      <label>照片根目录</label>
+      <input type="text" id="settings-dir" placeholder="例如: K:\Pictures\照片库">
+      <p class="modal-hint">修改后需刷新页面生效</p>
+      <div class="modal-actions">
+        <button onclick="closeModals()" class="modal-btn modal-btn-cancel">取消</button>
+        <button onclick="saveSettings()" class="modal-btn modal-btn-confirm">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <script>
+    /* ========== 滚动位置和记忆功能 ========== */
+    // 保存滚动位置
+    function saveScrollPosition() {
+      localStorage.setItem('scrollPosition', window.scrollY);
+    }
+
+    // 恢复滚动位置
+    function restoreScrollPosition() {
+      const savedPosition = localStorage.getItem('scrollPosition');
+      if (savedPosition) {
+        window.scrollTo(0, parseInt(savedPosition));
+      }
+    }
+
+    // 保存最后访问的章节
+    function saveLastChapter(chapterName) {
+      localStorage.setItem('lastChapter', chapterName);
+    }
+
+    // 继续回忆
+    function continueMemory() {
+      const lastChapter = localStorage.getItem('lastChapter');
+      if (lastChapter) {
+        location.href = '/chapter/' + lastChapter;
+      }
+    }
+
+    // 检查是否有最后访问的章节
+    function checkLastChapter() {
+      const lastChapter = localStorage.getItem('lastChapter');
+      const btnContinue = document.getElementById('btn-continue');
+      if (lastChapter) {
+        btnContinue.style.display = 'flex';
+      } else {
+        btnContinue.style.display = 'none';
+      }
+    }
+
+    /* ========== 弹窗控制 ========== */
+    function showModal(type) {
+      closeModals();
+      document.getElementById('modal-' + type).classList.add('active');
+      if (type === 'settings') {
+        document.getElementById('settings-dir').value = '{{ root_dir }}';
+      }
+      if (type === 'create') {
+        setTimeout(() => document.getElementById('new-chapter-name').focus(), 100);
+      }
+    }
+
+    function closeModals() {
+      document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+    }
+
+    function showRenameChapter(name) {
+      showModal('rename');
+      document.getElementById('rename-old').value = name;
+      document.getElementById('rename-new').value = name;
+      setTimeout(() => {
+        const inp = document.getElementById('rename-new');
+        inp.focus();
+        inp.select();
+      }, 100);
+    }
+
+    function confirmDeleteChapter(name) {
+      showModal('delete');
+      document.getElementById('delete-name').textContent = name;
+      document.getElementById('delete-target').value = name;
+    }
+
+    /* ========== Toast 提示 ========== */
+    function toast(msg, err) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.background = err
+        ? 'linear-gradient(135deg, #dc2626, #ef4444)'
+        : 'linear-gradient(135deg, #E91E63, #FF6090)';
+      t.style.opacity = '1';
+      setTimeout(() => t.style.opacity = '0', 2000);
+    }
+
+    /* ========== API 调用 ========== */
+    async function createChapter() {
+      const name = document.getElementById('new-chapter-name').value.trim();
+      if (!name) return;
+      const res = await fetch('/api/chapter/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      const data = await res.json();
+      if (data.ok) { toast('创建成功'); setTimeout(() => location.reload(), 500); }
+      else toast(data.error || '失败', true);
+    }
+
+    async function renameChapter() {
+      const old_name = document.getElementById('rename-old').value;
+      const new_name = document.getElementById('rename-new').value.trim();
+      if (!new_name || new_name === old_name) return;
+      const res = await fetch('/api/chapter/rename', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ old_name, new_name })
+      });
+      const data = await res.json();
+      if (data.ok) { toast('重命名成功'); setTimeout(() => location.reload(), 500); }
+      else toast(data.error || '失败', true);
+    }
+
+    async function deleteChapter() {
+      const name = document.getElementById('delete-target').value;
+      const res = await fetch('/api/chapter/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      const data = await res.json();
+      if (data.ok) { toast('已删除'); setTimeout(() => location.reload(), 500); }
+      else toast(data.error || '失败', true);
+    }
+
+    async function saveSettings() {
+      const dir = document.getElementById('settings-dir').value.trim();
+      if (!dir) return;
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ root_dir: dir })
+      });
+      const data = await res.json();
+      if (data.ok) { toast('保存成功，即将刷新'); setTimeout(() => location.reload(), 1000); }
+      else toast(data.error || '失败', true);
+    }
+
+    /* ========== 滚动淡入动画 (IntersectionObserver) ========== */
+    document.addEventListener('DOMContentLoaded', () => {
+      // 恢复滚动位置
+      restoreScrollPosition();
+      
+      // 检查是否有最后访问的章节
+      checkLastChapter();
+      
+      // 滚动动画
+      const nodes = document.querySelectorAll('.timeline-node');
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      }, {
+        threshold: 0.15,
+        rootMargin: '0px 0px -50px 0px'
+      });
+
+      nodes.forEach(node => observer.observe(node));
+    });
+
+    // 监听滚动事件，保存位置
+    window.addEventListener('scroll', saveScrollPosition);
+    
+    // 监听页面卸载事件，保存位置
+    window.addEventListener('beforeunload', saveScrollPosition);
+  </script>
+</body>
+</html>
