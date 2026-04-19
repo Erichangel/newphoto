@@ -48,5 +48,6 @@ Thumbs.db
 *.tmp
 *.bak
 
-# Node.js
+# Node
 node_modules/
+package-lock.json

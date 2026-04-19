@@ -1315,6 +1315,18 @@
   </div>
 </div>
 
+<!-- 章节跳转确认弹窗 -->
+<div id="modal-chapter-jump" class="modal-overlay" onclick="if(event.target===this){this.classList.remove('active');navBusy=false;}">
+  <div class="modal-box" style="max-width:380px;text-align:center;">
+    <div style="font-size:36px;margin-bottom:12px;">📖</div>
+    <p id="chapter-jump-msg" style="font-size:15px;color:#333;margin-bottom:20px;line-height:1.5;"></p>
+    <div style="display:flex;justify-content:center;gap:12px;">
+      <button onclick="document.getElementById('modal-chapter-jump').classList.remove('active');navBusy=false;" class="btn-outline" style="padding:8px 24px;font-size:14px;">取消</button>
+      <button id="chapter-jump-confirm-btn" class="btn-pink" style="padding:8px 24px;font-size:14px;">确认前往</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // 文件数据
 const files = [
@@ -1784,30 +1796,47 @@ function renderThumbnails() {
   list.innerHTML = html;
 }
 
+let navBusy = false;
+let pendingJumpUrl = null;
+
+function showChapterJumpConfirm(message, url) {
+  if (navBusy) return;
+  navBusy = true;
+  pendingJumpUrl = url;
+  document.getElementById('chapter-jump-msg').textContent = message;
+  var modal = document.getElementById('modal-chapter-jump');
+  var btn = document.getElementById('chapter-jump-confirm-btn');
+  btn.onclick = function() {
+    modal.classList.remove('active');
+    navBusy = false;
+    pendingJumpUrl = null;
+    location.href = url;
+  };
+  modal.classList.add('active');
+}
+
 function navFile(dir) {
-  if (!files.length) return;
-  var nextIdx = currentIdx + dir;
+  if (!files.length || navBusy) return;
+  const nextIdx = currentIdx + dir;
   if (dir === 1 && nextIdx >= files.length) {
-    var nextCh = '{{ next_chapter or "" }}';
-    if (nextCh) {
-      if (confirm('已是最后一张图片，是否前往下一章节「' + nextCh + '？')) {
-        location.href = '/chapter/' + nextCh;
-      }
+    const nextChapter = '{{ next_chapter or "" }}';
+    if (nextChapter) {
+      showChapterJumpConfirm('已是最后一张图片，是否前往下一章节「' + nextChapter + '」？', '/chapter/' + nextChapter);
+      return;
     } else {
       toast('已经是最后一张了', true);
+      return;
     }
-    return;
   }
   if (dir === -1 && nextIdx < 0) {
-    var prevCh = '{{ prev_chapter or "" }}';
-    if (prevCh) {
-      if (confirm('已是第一张图片，是否前往上一章节「' + prevCh + '？')) {
-        location.href = '/chapter/' + prevCh;
-      }
+    const prevChapter = '{{ prev_chapter or "" }}';
+    if (prevChapter) {
+      showChapterJumpConfirm('已是第一张图片，是否前往上一章节「' + prevChapter + '」？', '/chapter/' + prevChapter);
+      return;
     } else {
       toast('已经是第一张了', true);
+      return;
     }
-    return;
   }
   currentIdx = nextIdx;
   updateMainDisplay();
@@ -1828,20 +1857,21 @@ function closeLightbox() {
   if (v) v.pause();
 }
 function navLightbox(dir) {
-  var nextIdx = currentIdx + dir;
+  if (navBusy) return;
+  const nextIdx = currentIdx + dir;
   if (dir === 1 && nextIdx >= files.length) {
-    var nextCh = '{{ next_chapter or "" }}';
-    if (nextCh) {
-      if (confirm('已是最后一张图片，是否前往下一章节「' + nextCh + '？')) { location.href = '/chapter/' + nextCh; }
-    } else { toast('已经是最后一张了', true); }
-    return;
+    const nextChapter = '{{ next_chapter or "" }}';
+    if (nextChapter) {
+      showChapterJumpConfirm('已是最后一张图片，是否前往下一章节「' + nextChapter + '」？', '/chapter/' + nextChapter);
+      return;
+    } else { toast('已经是最后一张了', true); return; }
   }
   if (dir === -1 && nextIdx < 0) {
-    var prevCh = '{{ prev_chapter or "" }}';
-    if (prevCh) {
-      if (confirm('已是第一张图片，是否前往上一章节「' + prevCh + '？')) { location.href = '/chapter/' + prevCh; }
-    } else { toast('已经是第一张了', true); }
-    return;
+    const prevChapter = '{{ prev_chapter or "" }}';
+    if (prevChapter) {
+      showChapterJumpConfirm('已是第一张图片，是否前往上一章节「' + prevChapter + '」？', '/chapter/' + prevChapter);
+      return;
+    } else { toast('已经是第一张了', true); return; }
   }
   currentIdx = nextIdx;
   updateLightboxContent();

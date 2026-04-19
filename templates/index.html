@@ -1443,29 +1443,7 @@
       }
     }
 
-    /* ========== 页面初始化 ========== */
-    document.addEventListener('DOMContentLoaded', function() {
-      var nodes = document.querySelectorAll('.timeline-node');
-      if (nodes.length) {
-        var observer = new IntersectionObserver(function(entries) {
-          entries.forEach(function(entry) {
-            if (entry.isIntersecting) entry.target.classList.add('visible');
-          });
-        }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
-        nodes.forEach(function(n) { observer.observe(n); });
-      }
-      initUserSystem();
-      initYearFilter();
-      restoreScrollPosition();
-      checkLastChapter();
-      initMusicSystem();
-    });
-
-    // 监听滚动事件，保存位置
-    window.addEventListener('scroll', saveScrollPosition);
-    
-    // 监听页面卸载事件，保存位置
-    window.addEventListener('beforeunload', saveScrollPosition);
+    /* ========== 滚动位置和记忆功能 ========== */
     // 保存滚动位置
     function saveScrollPosition() {
       localStorage.setItem('scrollPosition', window.scrollY);
@@ -1839,22 +1817,37 @@
       else toast(data.error || '失败', true);
     }
 
-    /* ========== 页面初始化 ========== */
-    document.addEventListener('DOMContentLoaded', function() {
-      var nodes = document.querySelectorAll('.timeline-node');
-      if (nodes.length) {
-        var observer = new IntersectionObserver(function(entries) {
-          entries.forEach(function(entry) {
-            if (entry.isIntersecting) entry.target.classList.add('visible');
-          });
-        }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
-        nodes.forEach(function(n) { observer.observe(n); });
-      }
+    /* ========== 滚动淡入动画 (IntersectionObserver) ========== */
+    document.addEventListener('DOMContentLoaded', () => {
+      // 初始化用户系统
       initUserSystem();
+      
+      // 初始化年份筛选器
       initYearFilter();
-      restoreScrollPosition();
-      checkLastChapter();
+      
+      // 初始化音乐系统
       initMusicSystem();
+      
+      // 恢复滚动位置
+      restoreScrollPosition();
+      
+      // 检查是否有最后访问的章节（本地存储，兼容旧数据）
+      checkLastChapter();
+      
+      // 滚动动画
+      const nodes = document.querySelectorAll('.timeline-node');
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      }, {
+        threshold: 0.15,
+        rootMargin: '0px 0px -50px 0px'
+      });
+
+      nodes.forEach(node => observer.observe(node));
     });
 
     // 监听滚动事件，保存位置
