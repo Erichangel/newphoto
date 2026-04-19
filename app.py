@@ -493,7 +493,7 @@ def api_music_settings():
 def index():
     """首页 - 章节列表"""
     chapters = get_chapters()
-    version_ts = '04/19 13:30'
+    version_ts = '04/19 14:30'
     return render_template('index.html', chapters=chapters, root_dir=ROOT_DIR, version_ts=version_ts)
 
 

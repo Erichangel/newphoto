@@ -1194,13 +1194,22 @@
     }
 
     // 播放指定音乐
-    function playSpecificMusic(name) {
+    function playSpecificMusic(name, shouldPlay) {
       if (!name) return;
+      if (shouldPlay === undefined) shouldPlay = true;
       if (musicPlayLock) { bgmAudio.pause(); }
       musicPlayLock = true;
       currentMusicName = name;
       bgmAudio.src = '/api/music/serve?f=' + encodeURIComponent(name);
       bgmAudio.volume = parseInt(document.getElementById('music-volume').value) / 100;
+      showMusicPlayer();
+      renderMusicList();
+      if (!shouldPlay) {
+        musicPlayLock = false;
+        isMusicPlaying = false;
+        updateMusicUI();
+        return;
+      }
       var playPromise = bgmAudio.play();
       if (playPromise !== undefined) {
         playPromise.then(function() {
@@ -1229,10 +1238,10 @@
     }
 
     // 随机播放一首音乐
-    function playRandomMusic() {
+    function playRandomMusic(shouldPlay) {
       if (!allMusicList.length) return;
       const randomIdx = Math.floor(Math.random() * allMusicList.length);
-      playSpecificMusic(allMusicList[randomIdx].name);
+      playSpecificMusic(allMusicList[randomIdx].name, shouldPlay);
     }
 
     // 上一首（随机）
@@ -1259,16 +1268,20 @@
         bgmAudio.pause();
         isMusicPlaying = false;
         musicPlayLock = false;
+        updateMusicUI();
       } else {
         musicErrorCount = 0;
-        bgmAudio.play().then(function() { isMusicPlaying = true; }).catch(function(e) {
+        isMusicPlaying = true;
+        updateMusicUI();
+        bgmAudio.play().catch(function(e) {
+          isMusicPlaying = false;
           musicPlayLock = false;
+          updateMusicUI();
           if (e.name === 'AbortError') return;
           if (e.name === 'NotAllowedError') { console.log('浏览器阻止自动播放'); return; }
           console.error('播放失败:', e);
         });
       }
-      updateMusicUI();
     }
 
     // 更新播放器UI状态
@@ -1421,19 +1434,11 @@
             resumeSavedMusic(savedState, autoPlay);
             return;
           }
-          if (autoPlay) { playRandomMusic(); return; }
+          if (autoPlay) { playRandomMusic(true); return; }
           return;
         }
 
-        playRandomMusic();
-        if (!autoPlay) {
-          bgmAudio.addEventListener('canplay', function onPauseRandom() {
-            bgmAudio.removeEventListener('canplay', onPauseRandom);
-            bgmAudio.pause();
-            isMusicPlaying = false;
-            updateMusicUI();
-          });
-        }
+        playRandomMusic(autoPlay);
       } catch(e) {
         if (savedState && savedState.playing) {
           resumeSavedMusic(savedState, true);

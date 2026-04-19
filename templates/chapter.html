@@ -1414,13 +1414,22 @@ function renderChapterMusicSelect() {
   select.innerHTML = html;
 }
 
-function playSpecificMusic(name) {
+function playSpecificMusic(name, shouldPlay) {
   if (!name) return;
+  if (shouldPlay === undefined) shouldPlay = true;
   if (musicPlayLock) { bgmAudio.pause(); }
   musicPlayLock = true;
   currentMusicName = name;
   bgmAudio.src = '/api/music/serve?f=' + encodeURIComponent(name);
   bgmAudio.volume = parseInt(document.getElementById('music-volume').value) / 100;
+  showMusicPlayer();
+  renderMusicList();
+  if (!shouldPlay) {
+    musicPlayLock = false;
+    isMusicPlaying = false;
+    updateMusicUI();
+    return;
+  }
   const playPromise = bgmAudio.play();
   if (playPromise !== undefined) {
     playPromise.then(function() {
@@ -1448,10 +1457,10 @@ function playSpecificMusic(name) {
   }
 }
 
-function playRandomMusic() {
+function playRandomMusic(shouldPlay) {
   if (!allMusicList.length) return;
   const idx = Math.floor(Math.random() * allMusicList.length);
-  playSpecificMusic(allMusicList[idx].name);
+  playSpecificMusic(allMusicList[idx].name, shouldPlay);
 }
 function playPrevMusic() { playRandomMusic(); }
 function playNextMusic() { playRandomMusic(); }
@@ -1473,16 +1482,20 @@ function togglePlayPause() {
     bgmAudio.pause();
     isMusicPlaying = false;
     musicPlayLock = false;
+    updateMusicUI();
   } else {
     musicErrorCount = 0;
-    bgmAudio.play().then(function() { isMusicPlaying = true; }).catch(function(e) {
+    isMusicPlaying = true;
+    updateMusicUI();
+    bgmAudio.play().catch(function(e) {
+      isMusicPlaying = false;
       musicPlayLock = false;
+      updateMusicUI();
       if (e.name === 'AbortError') return;
       if (e.name === 'NotAllowedError') { console.log('浏览器阻止自动播放'); return; }
       console.error('播放失败:', e);
     });
   }
-  updateMusicUI();
 }
 
 function updateMusicUI() {
@@ -1666,15 +1679,7 @@ async function initMusicForChapter() {
     var hasChapterMusic = chapterData.ok && chapterData.music;
 
     if (hasChapterMusic) {
-      playSpecificMusic(chapterData.music);
-      if (!autoPlay) {
-        bgmAudio.addEventListener('canplay', function onPauseCanPlay() {
-          bgmAudio.removeEventListener('canplay', onPauseCanPlay);
-          bgmAudio.pause();
-          isMusicPlaying = false;
-          updateMusicUI();
-        });
-      }
+      playSpecificMusic(chapterData.music, autoPlay);
       return;
     }
 
@@ -1692,15 +1697,7 @@ async function initMusicForChapter() {
       return;
     }
 
-    playRandomMusic();
-    if (!autoPlay) {
-      bgmAudio.addEventListener('canplay', function onPauseRandom() {
-        bgmAudio.removeEventListener('canplay', onPauseRandom);
-        bgmAudio.pause();
-        isMusicPlaying = false;
-        updateMusicUI();
-      });
-    }
+    playRandomMusic(autoPlay);
   } catch(e) {
     var saved = restoreMusicState();
     if (saved && saved.playing) {
