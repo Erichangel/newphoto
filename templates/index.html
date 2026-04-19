@@ -2,16 +2,16 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>时光印记</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind CSS (本地编译) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}?v=4">
   <!-- Google Fonts: Noto Serif SC -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
-  <!-- Font Awesome CDN -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Font Awesome 本地文件 -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='font-awesome/css/font-awesome.min.css') }}">
 
   <style>
     /* ========== 全局基础样式 ========== */
@@ -162,6 +162,82 @@
       background: rgba(233, 30, 99, 0.15);
     }
 
+    /* 用户菜单 */
+    .user-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(233, 30, 99, 0.2);
+      padding: 12px;
+      min-width: 200px;
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 100;
+      margin-top: 4px;
+    }
+
+    .user-menu-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 4px;
+    }
+
+    .user-menu-item:hover {
+      background: rgba(233, 30, 99, 0.08);
+    }
+
+    .user-menu-item.active {
+      background: rgba(233, 30, 99, 0.15);
+      color: #E91E63;
+    }
+
+    .user-menu-item i {
+      margin-right: 8px;
+      color: #E91E63;
+    }
+
+    .user-menu-item .user-name {
+      flex: 1;
+      font-size: 14px;
+    }
+
+    .user-menu-item .user-time {
+      font-size: 11px;
+      color: #999;
+    }
+
+    .user-menu-item .delete-user-btn {
+      opacity: 0;
+      transition: opacity 0.2s;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(220, 38, 38, 0.1);
+      color: #dc2626;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+
+    .user-menu-item:hover .delete-user-btn {
+      opacity: 1;
+    }
+
+    .user-menu-item .delete-user-btn:hover {
+      background: #dc2626;
+      color: white;
+    }
+
     /* ========== 时间线区域 ========== */
     .timeline-container {
       position: relative;
@@ -180,6 +256,26 @@
       background: linear-gradient(180deg, #E91E63, #D4A574, #E91E63);
       transform: translateX(-50%);
       border-radius: 2px;
+    }
+
+    /* 年份筛选标签 */
+    .year-tab {
+      padding: 6px 18px;
+      border-radius: 20px;
+      border: 1.5px solid rgba(233,30,99,0.2);
+      background: transparent;
+      color: #C2185B;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .year-tab:hover { background: rgba(233,30,99,0.08); }
+    .year-tab.active {
+      background: linear-gradient(135deg, #E91E63, #FF6090);
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 3px 12px rgba(233,30,99,0.25);
     }
 
     /* 时间线节点 */
@@ -519,7 +615,173 @@
       color: white;
     }
 
-    /* ========== 响应式 ========== */
+    /* ========== 音乐播放器 ========== */
+  .music-player {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 180;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(233, 30, 99, 0.15);
+    padding: 8px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 -4px 24px rgba(233, 30, 99, 0.12);
+    transition: transform 0.3s ease;
+  }
+  .music-player.hidden { display: none !important; }
+  .music-player.collapsed {
+    transform: translateY(calc(100% - 36px));
+  }
+  .music-player.collapsed:hover {
+    transform: translateY(0);
+  }
+  .music-player-toggle {
+    position: absolute;
+    top: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 32px;
+    height: 22px;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(233, 30, 99, 0.12);
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #E91E63;
+    font-size: 11px;
+  }
+  .music-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #E91E63, #FF6090);
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+  }
+  .music-icon:hover { transform: scale(1.1); }
+  .music-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .music-name {
+    font-size: 12px;
+    color: #C2185B;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .music-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .music-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: #C2185B;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.2s ease;
+  }
+  .music-btn:hover { background: rgba(233, 30, 99, 0.08); }
+  .music-btn.play-btn {
+    width: 34px;
+    height: 34px;
+    background: linear-gradient(135deg, #E91E63, #FF6090);
+    color: white;
+  }
+  .music-btn.play-btn:hover { transform: scale(1.05); }
+  .music-volume {
+    width: 50px;
+    height: 4px;
+    appearance: none;
+    -webkit-appearance: none;
+    background: rgba(233, 30, 99, 0.15);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  .music-volume::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #E91E63;
+    cursor: pointer;
+  }
+  .music-close-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(220, 38, 38, 0.08);
+    color: #dc2626;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .music-close-btn:hover { background: #dc2626; color: white; }
+
+  /* 音乐设置弹窗 */
+  .music-settings-content {
+    max-height: 350px;
+    overflow-y: auto;
+  }
+  .music-list-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    gap: 8px;
+  }
+  .music-list-item:hover { background: rgba(233, 30, 99, 0.06); }
+  .music-list-item.selected { background: rgba(233, 30, 99, 0.1); }
+  .music-list-item .music-item-name {
+    flex: 1;
+    font-size: 13px;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .music-list-item .music-item-size {
+    font-size: 11px;
+    color: #999;
+  }
+
+  /* ========== 响应式 ========== */
     @media (max-width: 768px) {
       .timeline-line {
         left: 24px;
@@ -614,24 +876,64 @@
   <div class="glow-orb glow-orb-3"></div>
 
   <!-- 顶部固定栏 -->
-  <header class="top-bar">
+  <header class="top-bar" style="display:grid !important; grid-template-columns:1fr auto 1fr !important; align-items:center; justify-content:normal;">
+    <!-- 左：标题 -->
     <div class="top-bar-title">
-      <i class="fas fa-heart"></i>
+      <i class="fa fa-heart"></i>
       <span>时光印记</span>
+      <span style="font-size: 11px; color: #bbb; font-weight: 400; margin-left: 6px;">v{{ version_ts }}</span>
     </div>
-    <div class="flex items-center gap-2">
-      <span class="text-xs text-gray-400 hidden sm:inline" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ root_dir }}</span>
+
+    <!-- 中间：年份筛选 + 继续回忆（Grid自动居中） -->
+    <div style="display:flex; align-items:center; gap:6px;">
+      <!-- 年份筛选 -->
+      <div style="display:flex; align-items:center; gap:4px;">
+        <i class="fa fa-calendar" style="font-size:13px; color:#D4A574;"></i>
+        <select id="year-select" onchange="filterYear(this.value)" style="padding:6px 28px 6px 12px; border-radius:8px; border:1.5px solid rgba(233,30,99,0.2); background:rgba(255,255,255,0.8); color:#C2185B; font-size:14px; font-weight:600; cursor:pointer; outline:none; appearance:none;-webkit-appearance:none;">
+          <option value="all">全部年份</option>
+        </select>
+        <i class="fa fa-chevron-down" style="font-size:10px; color:#E91E63; margin-left:-20px; pointer-events:none;"></i>
+      </div>
+
       <button id="btn-continue" onclick="continueMemory()" class="btn-pink-gradient" style="display: none;">
-        <i class="fas fa-history"></i>
+        <i class="fa fa-history"></i>
         <span>继续回忆</span>
       </button>
-      <button onclick="showModal('settings')" class="btn-ghost-pink" title="设置">
-        <i class="fas fa-cog"></i>
+    </div>
+
+    <!-- 右侧：新建章节 + 用户选择 + 设置 -->
+    <div style="display:flex; align-items:center; justify-content:flex-end; gap:6px;">
+      <button onclick="showModal('create')" class="btn-pink-gradient">
+        <i class="fa fa-plus"></i>
+        <span>新建章节</span>
+      </button>
+
+      <!-- 用户选择 -->
+      <div id="user-selector" style="position: relative;">
+        <button onclick="toggleUserMenu()" class="btn-ghost-pink" title="选择用户">
+          <i class="fa fa-user"></i>
+          <span id="current-user-name" class="hidden sm:inline">未选择</span>
+          <i class="fa fa-chevron-down" style="font-size: 10px; margin-left: 4px;"></i>
+        </button>
+        <!-- 用户菜单下拉 -->
+        <div id="user-menu" class="user-menu" style="display: none;">
+          <div id="user-list"></div>
+          <div style="border-top: 1px solid rgba(233, 30, 99, 0.1); padding-top: 8px; margin-top: 8px;">
+            <button onclick="showCreateUserModal()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-pink-50 transition text-sm" style="color: #E91E63;">
+              <i class="fa fa-user-plus" style="margin-right: 6px;"></i>
+              新建用户
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <button onclick="showModal('settings')" class="btn-ghost" title="设置">
+        <i class="fa fa-cog"></i>
         <span class="hidden sm:inline">设置</span>
       </button>
-      <button onclick="showModal('create')" class="btn-pink-gradient">
-        <i class="fas fa-plus"></i>
-        <span>新建章节</span>
+      <button onclick="toggleMusicPlayer()" id="header-music-btn" title="背景音乐" style="cursor:pointer; display:flex; align-items:center; gap:4px; padding:6px 14px; border-radius:10px; border:1.5px solid rgba(233,30,99,0.2); background:rgba(233,30,99,0.08); color:#C2185B; font-size:13px; transition:all 0.2s;">
+        <i class="fa fa-music"></i>
+        <span class="hidden sm:inline">音乐</span>
       </button>
     </div>
   </header>
@@ -641,14 +943,14 @@
     <div class="timeline-line"></div>
 
     {% for ch in chapters %}
-    <div class="timeline-node" onclick="location.href='/chapter/{{ ch.name }}'">
+    <div class="timeline-node" data-year="{{ ch.year }}" onclick="location.href='/chapter/{{ ch.name }}'">
       <!-- 悬停操作 -->
       <div class="node-actions" onclick="event.stopPropagation()">
         <button class="node-action-btn rename-btn" onclick="showRenameChapter('{{ ch.name }}')" title="重命名">
-          <i class="fas fa-pen"></i>
+          <i class="fa fa-pencil"></i>
         </button>
         <button class="node-action-btn delete-btn" onclick="confirmDeleteChapter('{{ ch.name }}')" title="删除">
-          <i class="fas fa-trash"></i>
+          <i class="fa fa-trash"></i>
         </button>
       </div>
 
@@ -686,8 +988,21 @@
   <!-- 新建章节弹窗 -->
   <div id="modal-create" class="modal-overlay" onclick="if(event.target===this)closeModals()">
     <div class="modal-box">
-      <h3><i class="fas fa-plus-circle" style="color: #E91E63; margin-right: 6px;"></i>新建章节</h3>
-      <input type="text" id="new-chapter-name" placeholder="输入章节名称（即文件夹名）" onkeydown="if(event.key==='Enter')createChapter()">
+      <h3><i class="fa fa-plus-circle" style="color: #E91E63; margin-right: 6px;"></i>新建章节</h3>
+      <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+        <div style="flex:1;">
+          <label style="font-size: 11px; color:#999; display:block; margin-bottom:4px;">年份</label>
+          <select id="new-chapter-year" style="width:100%; padding:8px 12px; border-radius:8px; border:1.5px solid rgba(233,30,99,0.2); font-size:14px; color:#C2185B; outline:none;">
+          </select>
+        </div>
+        <div style="flex:0.7;">
+          <label style="font-size: 11px; color:#999; display:block; margin-bottom:4px;">月份</label>
+          <select id="new-chapter-month" style="width:100%; padding:8px 12px; border-radius:8px; border:1.5px solid rgba(233,30,99,0.2); font-size:14px; color:#C2185B; outline:none;">
+          </select>
+        </div>
+      </div>
+      <input type="text" id="new-chapter-name" placeholder="输入自定义名字（如：相识）" onkeydown="if(event.key==='Enter')createChapter()">
+      <div style="font-size:11px; color:#bbb; margin-top:6px;">预览：<span id="chapter-preview" style="color:#C2185B; font-weight:600;"></span></div>
       <div class="modal-actions">
         <button onclick="closeModals()" class="modal-btn modal-btn-cancel">取消</button>
         <button onclick="createChapter()" class="modal-btn modal-btn-confirm">创建</button>
@@ -698,7 +1013,7 @@
   <!-- 重命名弹窗 -->
   <div id="modal-rename" class="modal-overlay" onclick="if(event.target===this)closeModals()">
     <div class="modal-box">
-      <h3><i class="fas fa-pen-fancy" style="color: #E91E63; margin-right: 6px;"></i>重命名章节</h3>
+      <h3><i class="fa fa-pencil" style="color: #E91E63; margin-right: 6px;"></i>重命名章节</h3>
       <input type="text" id="rename-old" style="display:none;">
       <input type="text" id="rename-new" placeholder="输入新名称" onkeydown="if(event.key==='Enter')renameChapter()">
       <div class="modal-actions">
@@ -711,7 +1026,7 @@
   <!-- 删除确认弹窗 -->
   <div id="modal-delete" class="modal-overlay" onclick="if(event.target===this)closeModals()">
     <div class="modal-box">
-      <h3 style="color: #dc2626;"><i class="fas fa-exclamation-triangle" style="margin-right: 6px;"></i>确认删除</h3>
+      <h3 style="color: #dc2626;"><i class="fa fa-exclamation-triangle" style="margin-right: 6px;"></i>确认删除</h3>
       <p style="color: #666; font-size: 0.9rem; margin-bottom: 4px;">确定要删除章节 "<span id="delete-name" style="font-weight: 600; color: #333;"></span>" 吗？</p>
       <p class="modal-warning">此操作不可恢复，文件夹内所有文件将被删除！</p>
       <input type="text" id="delete-target" style="display:none;">
@@ -725,9 +1040,9 @@
   <!-- 设置弹窗 -->
   <div id="modal-settings" class="modal-overlay" onclick="if(event.target===this)closeModals()">
     <div class="modal-box">
-      <h3><i class="fas fa-cog" style="color: #E91E63; margin-right: 6px;"></i>设置</h3>
+      <h3><i class="fa fa-cog" style="color: #E91E63; margin-right: 6px;"></i>设置</h3>
       <label>照片根目录</label>
-      <input type="text" id="settings-dir" placeholder="例如: K:\Pictures\照片库">
+      <input type="text" id="settings-dir" placeholder="例如：K:\Pictures\照片库">
       <p class="modal-hint">修改后需刷新页面生效</p>
       <div class="modal-actions">
         <button onclick="closeModals()" class="modal-btn modal-btn-cancel">取消</button>
@@ -736,11 +1051,421 @@
     </div>
   </div>
 
+  <!-- 创建用户模态框 -->
+  <div id="modal-create-user" class="modal-overlay" onclick="if(event.target===this)closeModals()">
+    <div class="modal-box">
+      <h3><i class="fa fa-user-plus" style="color: #E91E63; margin-right: 6px;"></i>新建用户</h3>
+      <label>用户名</label>
+      <input type="text" id="create-user-name" placeholder="输入用户名" maxlength="20">
+      <div class="modal-actions">
+        <button onclick="closeModals()" class="modal-btn modal-btn-cancel">取消</button>
+        <button onclick="createUser()" class="modal-btn modal-btn-confirm">创建</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div id="toast"></div>
 
+  <!-- 全局音乐播放器 -->
+  <audio id="bgm-audio" preload="auto" loop></audio>
+  <div id="music-player" class="music-player">
+    <button class="music-icon" onclick="toggleMusicPlayer()" title="展开/收起"><i class="fa fa-music"></i></button>
+    <div class="music-info">
+      <div class="music-name" id="music-name">未播放</div>
+    </div>
+    <div class="music-controls">
+      <button class="music-btn" onclick="playPrevMusic()" title="上一首"><i class="fa fa-step-backward"></i></button>
+      <button class="music-btn play-btn" onclick="togglePlayPause()" id="music-play-btn" title="播放/暂停"><i class="fa fa-play"></i></button>
+      <button class="music-btn" onclick="playNextMusic()" title="下一首（随机）"><i class="fa fa-step-forward"></i></button>
+      <input type="range" class="music-volume" id="music-volume" min="0" max="100" value="50" oninput="changeMusicVolume(this.value)" title="音量">
+      <button class="music-btn" onclick="showMusicSettings()" title="音乐设置"><i class="fa fa-cog"></i></button>
+      <button class="music-close-btn" onclick="closeMusicPlayer()" title="关闭播放器"><i class="fa fa-times"></i></button>
+    </div>
+  </div>
+
+  <!-- 音乐设置弹窗 -->
+  <div id="modal-music-settings" class="modal-overlay" onclick="if(event.target===this)closeModals()">
+    <div class="modal-box" style="max-width:480px;">
+      <h3><i class="fa fa-music" style="color: #E91E63; margin-right: 6px;"></i>音乐设置</h3>
+      <label>切换章节时自动换歌</label>
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+        <label style="display:flex; align-items:center; cursor:pointer; font-size:13px; color:#555;">
+          <input type="checkbox" id="music-auto-switch" onchange="saveMusicSettings()" checked style="margin-right:6px; accent-color:#E91E63;">
+          自动切换
+        </label>
+        <span style="font-size:11px; color:#aaa;">开启后，进入或切换章节时自动更换背景音乐</span>
+      </div>
+      <label>进入页面自动播放</label>
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+        <label style="display:flex; align-items:center; cursor:pointer; font-size:13px; color:#555;">
+          <input type="checkbox" id="music-auto-play" onchange="saveMusicSettings()" checked style="margin-right:6px; accent-color:#E91E63;">
+          自动播放
+        </label>
+        <span style="font-size:11px; color:#aaa;">开启后，进入页面自动开始播放音乐</span>
+      </div>
+      <label>当前章节指定音乐</label>
+      <div id="chapter-music-select-area" style="margin-bottom:4px;">
+        <p style="font-size:12px; color:#999;">请在章节页面中设置该章节的专属音乐</p>
+      </div>
+      <label>可用音乐列表</label>
+      <div class="music-settings-content" id="music-list-container" style="border:1.5px solid rgba(233,30,99,0.15); border-radius:10px; max-height:200px; overflow-y:auto; margin-bottom:6px;">
+        <div style="padding:20px; text-align:center; color:#bbb; font-size:13px;">加载中...</div>
+      </div>
+      <p class="modal-hint">将音乐文件放入 <span id="music-dir-hint" style="color:#C2185B;">K:\Pictures\音乐</span> 文件夹即可使用</p>
+      <div class="modal-actions">
+        <button onclick="closeModals()" class="modal-btn modal-btn-cancel">关闭</button>
+        <button onclick="loadMusicList()" class="modal-btn modal-btn-confirm">刷新列表</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    /* ========== 滚动位置和记忆功能 ========== */
+    /* ========== 背景音乐系统 ========== */
+    let allMusicList = [];
+    let currentMusicName = '';
+    let isMusicPlaying = false;
+    let musicPlayerCollapsed = false;
+    let musicErrorCount = 0;
+    let musicErrorTimer = null;
+    let musicPlayLock = false;
+
+    const bgmAudio = document.getElementById('bgm-audio');
+
+    bgmAudio.addEventListener('ended', function() {
+      musicErrorCount = 0;
+      if (!bgmAudio.loop) {
+        playNextMusic();
+      }
+    });
+    bgmAudio.addEventListener('error', function() {
+      var code = bgmAudio.error ? bgmAudio.error.code : 0;
+      console.warn('音乐加载失败:', currentMusicName || bgmAudio.src, 'code=' + code);
+      isMusicPlaying = false;
+      musicErrorCount++;
+      if (musicErrorCount > 5) {
+        console.warn('连续错误过多，停止自动跳过');
+        bgmAudio.removeAttribute('src');
+        bgmAudio.load();
+        currentMusicName = '';
+        updateMusicUI();
+        return;
+      }
+      if (currentMusicName && code === 4) {
+        allMusicList = allMusicList.filter(function(m) { return m.name !== currentMusicName; });
+        currentMusicName = '';
+      }
+      updateMusicUI();
+      renderMusicList();
+      clearTimeout(musicErrorTimer);
+      musicErrorTimer = setTimeout(function() {
+        if (allMusicList.length > 0) playNextMusic();
+      }, 500);
+    });
+
+    // 加载音乐列表
+    async function loadMusicList() {
+      try {
+        const res = await fetch('/api/music/list');
+        const data = await res.json();
+        if (data.ok) {
+          allMusicList = data.musics;
+          renderMusicList();
+          document.getElementById('music-dir-hint').textContent = data.music_dir || 'K:\\Pictures\\音乐';
+        }
+      } catch (e) { console.error('加载音乐列表失败:', e); }
+    }
+
+    // 渲染音乐设置弹窗中的列表
+    function renderMusicList() {
+      const container = document.getElementById('music-list-container');
+      if (!allMusicList.length) {
+        container.innerHTML = '<div style="padding:20px; text-align:center; color:#bbb; font-size:13px;"><i class="fa fa-music" style="display:block; font-size:24px; margin-bottom:6px; opacity:0.4;"></i>暂无音乐文件<br><span style="font-size:11px;">请将音频文件放入音乐文件夹</span></div>';
+        return;
+      }
+      container.innerHTML = allMusicList.map(m => `
+        <div class="music-list-item${m.name === currentMusicName ? ' selected' : ''}" onclick="playSpecificMusic('${m.name}')">
+          <i class="fa fa-music" style="color:#E91E63; font-size:12px; width:16px; text-align:center;"></i>
+          <span class="music-item-name">${m.name}</span>
+          <span class="music-item-size">${m.size_display}</span>
+          ${m.name === currentMusicName ? '<i class="fa fa-volume-up" style="color:#E91E63; font-size:11px;"></i>' : ''}
+        </div>
+      `).join('');
+    }
+
+    // 播放指定音乐
+    function playSpecificMusic(name) {
+      if (!name) return;
+      if (musicPlayLock) { bgmAudio.pause(); }
+      musicPlayLock = true;
+      currentMusicName = name;
+      bgmAudio.src = '/api/music/serve?f=' + encodeURIComponent(name);
+      bgmAudio.volume = parseInt(document.getElementById('music-volume').value) / 100;
+      var playPromise = bgmAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(function() {
+          musicPlayLock = false;
+          isMusicPlaying = true;
+          musicErrorCount = 0;
+          updateMusicUI();
+          showMusicPlayer();
+          renderMusicList();
+        }).catch(function(e) {
+          musicPlayLock = false;
+          if (e.name === 'AbortError') return;
+          if (e.name === 'NotAllowedError') {
+            console.log('浏览器阻止自动播放，等待用户交互');
+            isMusicPlaying = false;
+            updateMusicUI();
+            return;
+          }
+          console.error('播放失败:', name, e);
+          isMusicPlaying = false;
+          updateMusicUI();
+        });
+      } else {
+        musicPlayLock = false;
+      }
+    }
+
+    // 随机播放一首音乐
+    function playRandomMusic() {
+      if (!allMusicList.length) return;
+      const randomIdx = Math.floor(Math.random() * allMusicList.length);
+      playSpecificMusic(allMusicList[randomIdx].name);
+    }
+
+    // 上一首（随机）
+    function playPrevMusic() { playRandomMusic(); }
+
+    // 下一首（随机）
+    function playNextMusic() { playRandomMusic(); }
+
+    // 播放/暂停切换
+    function togglePlayPause() {
+      if (bgmAudio.error) {
+        bgmAudio.removeAttribute('src');
+        bgmAudio.load();
+        currentMusicName = '';
+        isMusicPlaying = false;
+        musicErrorCount = 0;
+        musicPlayLock = false;
+        updateMusicUI();
+        if (allMusicList.length > 0) { playNextMusic(); return; }
+        return;
+      }
+      if (!bgmAudio.src && allMusicList.length > 0) { musicErrorCount = 0; playRandomMusic(); return; }
+      if (isMusicPlaying || musicPlayLock) {
+        bgmAudio.pause();
+        isMusicPlaying = false;
+        musicPlayLock = false;
+      } else {
+        musicErrorCount = 0;
+        bgmAudio.play().then(function() { isMusicPlaying = true; }).catch(function(e) {
+          musicPlayLock = false;
+          if (e.name === 'AbortError') return;
+          if (e.name === 'NotAllowedError') { console.log('浏览器阻止自动播放'); return; }
+          console.error('播放失败:', e);
+        });
+      }
+      updateMusicUI();
+    }
+
+    // 更新播放器UI状态
+    function updateMusicUI() {
+      const btn = document.getElementById('music-play-btn');
+      btn.innerHTML = isMusicPlaying ? '<i class="fa fa-pause"></i>' : '<i class="fa fa-play"></i>';
+      const nameEl = document.getElementById('music-name');
+      nameEl.textContent = currentMusicName || '未播放';
+    }
+
+    // 音量调节
+    function changeMusicVolume(val) {
+      bgmAudio.volume = val / 100;
+      localStorage.setItem('musicVolume', val);
+    }
+
+    // 显示播放器
+    function showMusicPlayer() {
+      const player = document.getElementById('music-player');
+      player.classList.remove('hidden', 'collapsed');
+      const headerBtn = document.getElementById('header-music-btn');
+      if (headerBtn) {
+        headerBtn.style.background = 'rgba(233,30,99,0.15)';
+        headerBtn.style.color = '#C2185B';
+        headerBtn.style.borderColor = 'rgba(233,30,99,0.35)';
+        headerBtn.style.boxShadow = '0 2px 8px rgba(233,30,99,0.15)';
+      }
+    }
+
+    // 关闭播放器（隐藏但继续后台播放）
+    function closeMusicPlayer() {
+      document.getElementById('music-player').classList.add('hidden');
+      document.getElementById('music-player').classList.remove('collapsed');
+      const headerBtn = document.getElementById('header-music-btn');
+      if (headerBtn) {
+        headerBtn.style.background = 'rgba(233,30,99,0.06)';
+        headerBtn.style.color = '#999';
+        headerBtn.style.borderColor = 'rgba(233,30,99,0.12)';
+        headerBtn.style.boxShadow = 'none';
+      }
+    }
+
+    // 展开/收起播放器（顶部按钮：切换隐藏/显示）
+    function toggleMusicPlayer() {
+      const player = document.getElementById('music-player');
+      if (player.classList.contains('hidden')) {
+        showMusicPlayer();
+      } else {
+        closeMusicPlayer();
+      }
+    }
+
+    // 显示音乐设置
+    async function showMusicSettings() {
+      loadMusicList();
+      // 加载当前设置
+      try {
+        const res = await fetch('/api/music/settings');
+        const data = await res.json();
+        if (data.ok) {
+          document.getElementById('music-auto-switch').checked = data.settings.auto_switch !== false;
+          document.getElementById('music-auto-play').checked = data.settings.auto_play !== false;
+        }
+      } catch (e) {}
+      showModal('music-settings');
+    }
+
+    // 保存音乐设置
+    async function saveMusicSettings() {
+      const autoSwitch = document.getElementById('music-auto-switch').checked;
+      const autoPlay = document.getElementById('music-auto-play').checked;
+      try {
+        await fetch('/api/music/settings', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ settings: { auto_switch: autoSwitch, auto_play: autoPlay } })
+        });
+      } catch (e) {}
+    }
+
+    function saveMusicState() {
+      try {
+        sessionStorage.setItem('bgm_state', JSON.stringify({
+          name: currentMusicName,
+          src: bgmAudio.src,
+          time: bgmAudio.currentTime,
+          playing: !bgmAudio.paused && !!bgmAudio.src,
+          volume: bgmAudio.volume,
+          ts: Date.now()
+        }));
+      } catch(e) {}
+    }
+    function restoreMusicState() {
+      try {
+        var raw = sessionStorage.getItem('bgm_state');
+        if (!raw) return null;
+        var s = JSON.parse(raw);
+        if (!s || !s.name || !s.src || Date.now() - s.ts > 3600000) { sessionStorage.removeItem('bgm_state'); return null; }
+        return s;
+      } catch(e) { return null; }
+    }
+    function resumeSavedMusic(saved, autoPlay) {
+      currentMusicName = saved.name;
+      bgmAudio.src = saved.src;
+      bgmAudio.volume = saved.volume || 0.5;
+      bgmAudio.addEventListener('canplay', function onCanPlay() {
+        bgmAudio.removeEventListener('canplay', onCanPlay);
+        bgmAudio.currentTime = saved.time || 0;
+        if (autoPlay) {
+          var p = bgmAudio.play();
+          if (p) p.then(function() { isMusicPlaying = true; updateMusicUI(); renderMusicList(); }).catch(function(){});
+        } else {
+          isMusicPlaying = false;
+          updateMusicUI();
+          renderMusicList();
+        }
+      });
+    }
+    window.addEventListener('beforeunload', saveMusicState);
+    document.addEventListener('visibilitychange', function() { if (document.visibilityState === 'hidden') saveMusicState(); });
+
+    async function initMusicSystem() {
+      const savedVolume = localStorage.getItem('musicVolume');
+      if (savedVolume) {
+        document.getElementById('music-volume').value = savedVolume;
+        bgmAudio.volume = savedVolume / 100;
+      } else {
+        bgmAudio.volume = 0.5;
+      }
+      await loadMusicList();
+      showMusicPlayer();
+      updateMusicUI();
+      if (allMusicList.length === 0) return;
+
+      var savedState = restoreMusicState();
+
+      try {
+        const res = await fetch('/api/music/settings');
+        const data = await res.json();
+        const autoPlay = data.ok && data.settings.auto_play !== false;
+        const autoSwitch = data.ok && data.settings.auto_switch !== false;
+
+        if (data.ok) {
+          document.getElementById('music-auto-switch').checked = autoSwitch;
+          document.getElementById('music-auto-play').checked = autoPlay;
+        }
+
+        if (!autoSwitch) {
+          if (savedState && savedState.playing) {
+            resumeSavedMusic(savedState, autoPlay);
+            return;
+          }
+          if (autoPlay) { playRandomMusic(); return; }
+          return;
+        }
+
+        playRandomMusic();
+        if (!autoPlay) {
+          bgmAudio.addEventListener('canplay', function onPauseRandom() {
+            bgmAudio.removeEventListener('canplay', onPauseRandom);
+            bgmAudio.pause();
+            isMusicPlaying = false;
+            updateMusicUI();
+          });
+        }
+      } catch(e) {
+        if (savedState && savedState.playing) {
+          resumeSavedMusic(savedState, true);
+          return;
+        }
+        if (allMusicList.length > 0) playRandomMusic();
+      }
+    }
+
+    /* ========== 页面初始化 ========== */
+    document.addEventListener('DOMContentLoaded', function() {
+      var nodes = document.querySelectorAll('.timeline-node');
+      if (nodes.length) {
+        var observer = new IntersectionObserver(function(entries) {
+          entries.forEach(function(entry) {
+            if (entry.isIntersecting) entry.target.classList.add('visible');
+          });
+        }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+        nodes.forEach(function(n) { observer.observe(n); });
+      }
+      initUserSystem();
+      initYearFilter();
+      restoreScrollPosition();
+      checkLastChapter();
+      initMusicSystem();
+    });
+
+    // 监听滚动事件，保存位置
+    window.addEventListener('scroll', saveScrollPosition);
+    
+    // 监听页面卸载事件，保存位置
+    window.addEventListener('beforeunload', saveScrollPosition);
     // 保存滚动位置
     function saveScrollPosition() {
       localStorage.setItem('scrollPosition', window.scrollY);
@@ -757,6 +1482,8 @@
     // 保存最后访问的章节
     function saveLastChapter(chapterName) {
       localStorage.setItem('lastChapter', chapterName);
+      // 同时保存到服务器（用户系统）
+      saveUserLastChapter(chapterName, window.scrollY || 0);
     }
 
     // 继续回忆
@@ -778,6 +1505,196 @@
       }
     }
 
+    /* ========== 用户管理功能 ========== */
+    let currentUserId = null;
+
+    // 初始化用户系统
+    // ========== 年份筛选 ==========
+    function initYearFilter() {
+      const nodes = document.querySelectorAll('.timeline-node[data-year]');
+      const yearSet = new Set();
+      nodes.forEach(n => {
+        const y = n.getAttribute('data-year');
+        if (y) yearSet.add(y);
+      });
+      
+      const years = Array.from(yearSet).sort((a, b) => b.localeCompare(a));
+      const select = document.getElementById('year-select');
+      
+      if (select && years.length > 0) {
+        years.forEach(y => {
+          const opt = document.createElement('option');
+          opt.value = y;
+          opt.textContent = y;
+          select.appendChild(opt);
+        });
+      }
+    }
+    
+    let currentYearFilter = 'all';
+    
+    function filterYear(year) {
+      currentYearFilter = year;
+      
+      // 筛选节点
+      document.querySelectorAll('.timeline-node').forEach(node => {
+        const nodeYear = node.getAttribute('data-year');
+        if (year === 'all' || nodeYear === year) {
+          node.style.display = '';
+        } else {
+          node.style.display = 'none';
+        }
+      });
+    }
+
+    async function initUserSystem() {
+      // 获取当前用户
+      const res = await fetch('/api/user/current');
+      const data = await res.json();
+      if (data.ok && data.user) {
+        currentUserId = data.user.id;
+        document.getElementById('current-user-name').textContent = data.user.name;
+        // 获取用户的最后访问章节
+        loadUserLastChapter();
+      }
+      // 加载用户列表
+      loadUserList();
+    }
+
+    // 加载用户最后访问的章节
+    async function loadUserLastChapter() {
+      const res = await fetch('/api/user/last-chapter');
+      const data = await res.json();
+      const btnContinue = document.getElementById('btn-continue');
+      if (data.ok && data.chapter) {
+        btnContinue.style.display = 'flex';
+        btnContinue.onclick = function() {
+          location.href = '/chapter/' + data.chapter;
+        };
+      } else {
+        btnContinue.style.display = 'none';
+      }
+    }
+
+    // 加载用户列表
+    async function loadUserList() {
+      const res = await fetch('/api/user/list');
+      const data = await res.json();
+      const userList = document.getElementById('user-list');
+      if (data.ok && data.users.length > 0) {
+        userList.innerHTML = data.users.map(u => `
+          <div class="user-menu-item${u.id === currentUserId ? ' active' : ''}" onclick="selectUser('${u.id}', '${u.name}')">
+            <i class="fa fa-user"></i>
+            <div class="user-name">${u.name}</div>
+            <button class="delete-user-btn" onclick="event.stopPropagation(); confirmDeleteUser('${u.id}', '${u.name}')" title="删除用户">
+              <i class="fa fa-times"></i>
+            </button>
+          </div>
+        `).join('');
+      } else {
+        userList.innerHTML = '<div style="padding: 12px; text-align: center; color: #999; font-size: 13px;">暂无用户</div>';
+      }
+    }
+
+    // 切换用户菜单显示
+    function toggleUserMenu() {
+      const menu = document.getElementById('user-menu');
+      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // 选择用户
+    async function selectUser(userId, userName) {
+      const res = await fetch('/api/user/select', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ user_id: userId })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        currentUserId = userId;
+        document.getElementById('current-user-name').textContent = userName;
+        document.getElementById('user-menu').style.display = 'none';
+        loadUserLastChapter();
+        toast('已切换到用户：' + userName);
+      } else {
+        toast(data.error || '切换失败', true);
+      }
+    }
+
+    // 显示创建用户模态框
+    function showCreateUserModal() {
+      document.getElementById('user-menu').style.display = 'none';
+      document.getElementById('modal-create-user').classList.add('active');
+      document.getElementById('create-user-name').value = '';
+      document.getElementById('create-user-name').focus();
+    }
+
+    // 创建用户
+    async function createUser() {
+      const name = document.getElementById('create-user-name').value.trim();
+      if (!name) {
+        toast('请输入用户名', true);
+        return;
+      }
+
+      const res = await fetch('/api/user/create', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ name })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        currentUserId = data.user_id;
+        document.getElementById('current-user-name').textContent = data.name;
+        closeModals();
+        loadUserList();
+        loadUserLastChapter();
+        toast('用户创建成功：' + data.name);
+      } else {
+        toast(data.error || '创建失败', true);
+      }
+    }
+
+    // 保存用户浏览记录
+    async function saveUserLastChapter(chapterName, scrollPosition) {
+      if (!currentUserId) return;
+      await fetch('/api/user/last-chapter', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ chapter_name: chapterName, scroll_position: scrollPosition })
+      });
+    }
+
+    // 确认删除用户
+    function confirmDeleteUser(userId, userName) {
+      document.getElementById('user-menu').style.display = 'none';
+      if (confirm('确定要删除用户 "' + userName + '" 吗？\n\n该用户的浏览记录将被清除，此操作不可恢复。')) {
+        deleteUser(userId);
+      }
+    }
+
+    // 删除用户
+    async function deleteUser(userId) {
+      const res = await fetch('/api/user/delete', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ user_id: userId })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        toast('已删除用户：' + data.deleted_name);
+        // 如果删除的是当前用户
+        if (currentUserId === userId) {
+          currentUserId = null;
+          document.getElementById('current-user-name').textContent = '未选择';
+          loadUserLastChapter();
+        }
+        loadUserList();
+      } else {
+        toast(data.error || '删除失败', true);
+      }
+    }
+
     /* ========== 弹窗控制 ========== */
     function showModal(type) {
       closeModals();
@@ -786,6 +1703,7 @@
         document.getElementById('settings-dir').value = '{{ root_dir }}';
       }
       if (type === 'create') {
+        initChapterYearMonth();
         setTimeout(() => document.getElementById('new-chapter-name').focus(), 100);
       }
     }
@@ -823,13 +1741,59 @@
     }
 
     /* ========== API 调用 ========== */
-    async function createChapter() {
+    
+    // 初始化新建章节的年份/月份选择器
+    function initChapterYearMonth() {
+      const yearSelect = document.getElementById('new-chapter-year');
+      const monthSelect = document.getElementById('new-chapter-month');
+      
+      // 年份：当前年往前10年
+      const currentYear = new Date().getFullYear();
+      let yearHtml = '';
+      for (let y = currentYear; y >= currentYear - 15; y--) {
+        const selected = y === currentYear ? ' selected' : '';
+        yearHtml += `<option value="${y}"${selected}>${y}</option>`;
+      }
+      yearSelect.innerHTML = yearHtml;
+      
+      // 月份：1-12
+      let monthHtml = '';
+      for (let m = 1; m <= 12; m++) {
+        const mm = String(m).padStart(2, '0');
+        monthHtml += `<option value="${mm}">${m}月</option>`;
+      }
+      monthSelect.innerHTML = monthHtml;
+      
+      // 绑定预览更新
+      yearSelect.onchange = updateChapterPreview;
+      monthSelect.onchange = updateChapterPreview;
+      document.getElementById('new-chapter-name').oninput = updateChapterPreview;
+      
+      updateChapterPreview();
+    }
+    
+    // 更新建章节名称预览
+    function updateChapterPreview() {
+      const year = document.getElementById('new-chapter-year').value;
+      const month = document.getElementById('new-chapter-month').value;
       const name = document.getElementById('new-chapter-name').value.trim();
-      if (!name) return;
+      const previewEl = document.getElementById('chapter-preview');
+      if (name) {
+        previewEl.textContent = `${year}.${month}${name}`;
+      } else {
+        previewEl.textContent = `${year}.${month}`;
+      }
+    }
+
+    async function createChapter() {
+      const year = document.getElementById('new-chapter-year').value;
+      const month = document.getElementById('new-chapter-month').value;
+      const custom_name = document.getElementById('new-chapter-name').value.trim();
+      if (!custom_name) { toast('请输入自定义名字', true); return; }
       const res = await fetch('/api/chapter/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
+        body: JSON.stringify({ year, month, custom_name })
       });
       const data = await res.json();
       if (data.ok) { toast('创建成功'); setTimeout(() => location.reload(), 500); }
@@ -875,28 +1839,22 @@
       else toast(data.error || '失败', true);
     }
 
-    /* ========== 滚动淡入动画 (IntersectionObserver) ========== */
-    document.addEventListener('DOMContentLoaded', () => {
-      // 恢复滚动位置
+    /* ========== 页面初始化 ========== */
+    document.addEventListener('DOMContentLoaded', function() {
+      var nodes = document.querySelectorAll('.timeline-node');
+      if (nodes.length) {
+        var observer = new IntersectionObserver(function(entries) {
+          entries.forEach(function(entry) {
+            if (entry.isIntersecting) entry.target.classList.add('visible');
+          });
+        }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+        nodes.forEach(function(n) { observer.observe(n); });
+      }
+      initUserSystem();
+      initYearFilter();
       restoreScrollPosition();
-      
-      // 检查是否有最后访问的章节
       checkLastChapter();
-      
-      // 滚动动画
-      const nodes = document.querySelectorAll('.timeline-node');
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-          }
-        });
-      }, {
-        threshold: 0.15,
-        rootMargin: '0px 0px -50px 0px'
-      });
-
-      nodes.forEach(node => observer.observe(node));
+      initMusicSystem();
     });
 
     // 监听滚动事件，保存位置

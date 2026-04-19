@@ -2,12 +2,16 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>{{ chapter_name }} - 时光印记</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<!-- Tailwind CSS (本地编译) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}?v=4">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='font-awesome/css/font-awesome.min.css') }}?v=2">
 <style>
   * { box-sizing: border-box; }
   body {
@@ -148,6 +152,80 @@
     object-fit: contain;
   }
 
+  /* 主显示区域操作按钮容器 */
+  .main-display-actions {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    gap: 6px;
+    z-index: 5;
+  }
+
+  /* 主操作按钮 */
+  .main-action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .main-action-btn.delete-btn {
+    background: rgba(220, 38, 38, 0.9);
+    color: white;
+  }
+
+  .main-action-btn.delete-btn:hover {
+    background: rgba(220, 38, 38, 1);
+  }
+
+  .main-action-btn.rename-btn {
+    background: rgba(233, 30, 99, 0.9);
+    color: white;
+  }
+
+  .main-action-btn.rename-btn:hover {
+    background: rgba(233, 30, 99, 1);
+  }
+
+  /* 主显示区域内容 */
+  .main-display-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 主显示区域头部 */
+  .main-display-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* 文件名 */
+  .file-name {
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    max-width: 70%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   /* 缩略图 */
   .thumb-list {
     display: flex;
@@ -279,7 +357,7 @@
     border: 1.5px solid rgba(233, 30, 99, 0.2);
     color: #4a3342;
     padding: 16px;
-    border-radius: 10px;
+    border-radius: 0 0 10px 10px;
     font-family: 'Consolas', 'Monaco', monospace;
     font-size: 14px;
     resize: vertical;
@@ -288,6 +366,101 @@
     transition: border-color 0.2s;
   }
   .edit-area:focus { border-color: #E91E63; }
+
+  /* 富文本工具栏 */
+  .rich-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1.5px solid rgba(233, 30, 99, 0.2);
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    align-items: center;
+  }
+  .rich-toolbar-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: #C2185B;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    transition: all 0.15s ease;
+    font-weight: 600;
+  }
+  .rich-toolbar-btn:hover {
+    background: rgba(233, 30, 99, 0.1);
+  }
+  .rich-toolbar-btn:active {
+    background: rgba(233, 30, 99, 0.2);
+    transform: scale(0.95);
+  }
+  .rich-toolbar-divider {
+    width: 1px;
+    height: 20px;
+    background: rgba(233, 30, 99, 0.15);
+    margin: 0 4px;
+  }
+
+  /* 文章选择器 */
+  .article-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .article-select-wrapper {
+    position: relative;
+    flex: 1;
+    min-width: 140px;
+  }
+  .article-select {
+    width: 100%;
+    padding: 6px 32px 6px 12px;
+    border-radius: 8px;
+    border: 1.5px solid rgba(233, 30, 99, 0.15);
+    background: rgba(255, 255, 255, 0.7);
+    color: #C2185B;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .article-select:focus { border-color: #E91E63; }
+  .article-select-arrow {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: #E91E63;
+    font-size: 10px;
+  }
+  .article-author-tag {
+    font-size: 11px;
+    color: #999;
+    padding: 2px 8px;
+    background: rgba(233, 30, 99, 0.06);
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  .article-author-tag i { margin-right: 3px; }
+  .article-count-badge {
+    font-size: 11px;
+    color: #bbb;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.04);
+  }
 
   /* 灯箱 */
   .lightbox {
@@ -525,24 +698,168 @@
     color: #c4a0b0;
   }
 
+  /* 音乐播放器 */
+  .music-player {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 180;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(233, 30, 99, 0.15);
+    padding: 8px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 -4px 24px rgba(233, 30, 99, 0.12);
+    transition: transform 0.3s ease;
+  }
+  .music-player.hidden { display: none !important; }
+  .music-player.active { display: flex; }
+  .music-player.collapsed { transform: translateY(calc(100% - 36px)); }
+  .music-player.collapsed:hover { transform: translateY(0); }
+  .music-player-toggle {
+    position: absolute;
+    top: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 32px;
+    height: 22px;
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(233,30,99,0.12);
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #E91E63;
+    font-size: 11px;
+  }
+  .music-icon {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, #E91E63, #FF6090);
+    color: white; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0; transition: transform 0.2s;
+  }
+  .music-icon:hover { transform: scale(1.1); }
+  .music-info { flex: 1; min-width: 0; overflow: hidden; }
+  .music-name {
+    font-size: 12px; color: #C2185B; font-weight: 500;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .music-controls { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  .music-btn {
+    width: 30px; height: 30px; border-radius: 50%; border: none;
+    background: transparent; color: #C2185B; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; transition: all 0.2s ease;
+  }
+  .music-btn:hover { background: rgba(233, 30, 99, 0.08); }
+  .music-btn.play-btn { width: 34px; height: 34px; background: linear-gradient(135deg, #E91E63, #FF6090); color: white; }
+  .music-btn.play-btn:hover { transform: scale(1.05); }
+  .music-volume {
+    width: 50px; height: 4px; appearance: none; -webkit-appearance: none;
+    background: rgba(233, 30, 99, 0.15); border-radius: 2px;
+    outline: none; cursor: pointer;
+  }
+  .music-volume::-webkit-slider-thumb {
+    appearance: none; -webkit-appearance: none;
+    width: 12px; height: 12px; border-radius: 50%; background: #E91E63; cursor: pointer;
+  }
+  .music-close-btn {
+    width: 26px; height: 26px; border-radius: 50%; border: none;
+    background: rgba(220,38,38,0.08); color: #dc2626; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; flex-shrink: 0; transition: all 0.2s;
+  }
+  .music-close-btn:hover { background: #dc2626; color: white; }
+
+  @keyframes musicPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+  }
+
+  /* 音乐设置 */
+  .music-settings-content { max-height: 350px; overflow-y: auto; }
+  .music-list-item {
+    display: flex; align-items: center; padding: 8px 12px;
+    border-radius: 8px; cursor: pointer; transition: background 0.15s; gap: 8px;
+  }
+  .music-list-item:hover { background: rgba(233, 30, 99, 0.06); }
+  .music-list-item.selected { background: rgba(233, 30, 99, 0.1); }
+  .music-item-name { flex: 1; font-size: 13px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .music-item-size { font-size: 11px; color: #999; }
+
   /* 响应式 */
   @media (max-width: 768px) {
     .main-layout {
       flex-direction: column !important;
+      height: auto !important;
+      min-height: calc(100vh - 160px);
     }
     .gallery-section {
       width: 100% !important;
     }
     .article-section {
       width: 100% !important;
+      max-height: 280px;
+      min-height: 180px;
     }
     .main-display {
-      min-height: 280px;
+      min-height: 260px;
+      max-height: 50vh;
+    }
+    .article-panel {
+      max-height: 280px;
+      min-height: 180px;
+    }
+    .article-panel > div[style*="overflow-y"] {
+      max-height: 220px;
+    }
+    .rich-toolbar {
+      padding: 6px 8px;
+      gap: 2px;
+    }
+    .rich-toolbar-btn {
+      width: 28px;
+      height: 28px;
+      font-size: 12px;
+    }
+    .article-selector {
+      gap: 6px;
+    }
+    .article-select-wrapper {
+      min-width: 100px;
+      flex: 2;
+    }
+    #bottom-nav {
+      position: sticky;
+      bottom: 0;
+      background: linear-gradient(180deg, transparent 0%, rgba(255,245,247,0.95) 30%);
+      padding-top: 30px;
+      margin-bottom: -10px;
+    }
+    .lb-thumbs {
+      max-width: 90vw;
+      padding: 6px 12px;
+    }
+    .lb-thumb {
+      width: 48px;
+      height: 36px;
     }
   }
   @media (max-width: 480px) {
+    .main-layout {
+      min-height: calc(100vh - 140px);
+    }
     .main-display {
-      min-height: 220px;
+      min-height: 200px;
+      max-height: 45vh;
     }
     .thumb-item {
       width: 56px;
@@ -552,6 +869,32 @@
       width: 32px;
       height: 32px;
       font-size: 13px;
+    }
+    .article-section {
+      max-height: 240px;
+      min-height: 150px;
+    }
+    .article-panel {
+      max-height: 240px;
+      min-height: 150px;
+    }
+    .article-panel > div[style*="overflow-y"] {
+      max-height: 180px;
+    }
+    .rich-toolbar-btn {
+      width: 26px;
+      height: 26px;
+      font-size: 11px;
+    }
+    .vp-controls {
+      padding: 8px 16px;
+      gap: 8px;
+    }
+    .vp-volume {
+      width: 40px;
+    }
+    .vp-time {
+      font-size: 10px;
     }
   }
 </style>
@@ -568,35 +911,39 @@
   <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
     <!-- 返回按钮 -->
     <a href="/" class="w-9 h-9 rounded-full flex items-center justify-center text-sm transition-all duration-200 hover:scale-105" style="background: rgba(233,30,99,0.1); color: #E91E63;">
-      <i class="fas fa-arrow-left"></i>
+      <i class="fa fa-arrow-left"></i>
     </a>
     <!-- 章节标题 -->
-    <h1 class="serif text-lg font-bold truncate flex-1 typing-cursor" style="color: #C2185B;">{{ chapter_name }}</h1>
+    <h1 class="serif text-lg font-bold truncate flex-1" style="color: #C2185B;">{{ chapter_name }}</h1>
     <!-- 右侧按钮 -->
     <div class="flex gap-2">
       <label class="btn-pink text-sm cursor-pointer flex items-center gap-1.5">
-        <i class="fas fa-plus"></i>
+        <i class="fa fa-plus"></i>
         <span class="hidden sm:inline">添加文件</span>
         <input type="file" id="upload-input" multiple accept="image/*,video/*" class="hidden" onchange="uploadFiles(this.files)">
       </label>
       {% if md_content %}
       <button id="btn-edit" onclick="toggleEdit()" class="btn-ghost text-sm flex items-center gap-1.5">
-        <i class="fas fa-pen"></i>
-        <span class="hidden sm:inline">编辑文章</span>
+        <i class="fa fa-pencil"></i>
+        <span class="hidden sm:inline">编辑模式</span>
       </button>
       {% endif %}
       {% if not md_content %}
       <button onclick="startNewArticle()" class="btn-ghost text-sm flex items-center gap-1.5">
-        <i class="fas fa-feather-alt"></i>
+        <i class="fa fa-pencil"></i>
         <span class="hidden sm:inline">写文章</span>
       </button>
       {% endif %}
+      <button onclick="toggleMusicPlayer()" id="header-music-btn" class="text-sm cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 hover:scale-105" style="background: rgba(233,30,99,0.08); color: #C2185B; border: 1.5px solid rgba(233,30,99,0.2);" title="背景音乐">
+        <i class="fa fa-music"></i>
+        <span class="hidden sm:inline">音乐</span>
+      </button>
     </div>
   </div>
 </header>
 
 <!-- 主内容区 -->
-<div class="max-w-7xl mx-auto px-4 py-5 relative z-10">
+<div class="max-w-7xl mx-auto px-4 py-5 relative z-10" style="padding-bottom: 60px;">
   <div class="main-layout" style="display: flex; gap: 8px; height: calc(100vh - 200px);">
 
     <!-- 左侧画廊区域 -->
@@ -604,11 +951,19 @@
       {% if files %}
       <!-- 大图展示区 -->
       <div class="main-display" id="main-display">
-        <button class="nav-btn" style="left: 12px;" onclick="navFile(-1)"><i class="fas fa-chevron-left"></i></button>
-        <button class="nav-btn" style="right: 12px;" onclick="navFile(1)"><i class="fas fa-chevron-right"></i></button>
-        <button onclick="openLightbox()" style="position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.2);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.25);color:white;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
-          <i class="fas fa-expand"></i>
-        </button>
+        <button class="nav-btn" style="left: 12px;" onclick="navFile(-1)"><i class="fa fa-chevron-left"></i></button>
+        <button class="nav-btn" style="right: 12px;" onclick="navFile(1)"><i class="fa fa-chevron-right"></i></button>
+        <div class="main-display-actions" id="main-display-actions">
+          <button class="main-action-btn delete-btn" onclick="confirmDeleteFile('')" title="删除">
+            <i class="fa fa-trash"></i>
+          </button>
+          <button class="main-action-btn rename-btn" onclick="showRenameFile('')" title="重命名">
+            <i class="fa fa-pencil"></i>
+          </button>
+          <button onclick="openLightbox()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.2);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.25);color:white;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+            <i class="fa fa-expand"></i>
+          </button>
+        </div>
         <div id="main-content"></div>
       </div>
 
@@ -618,7 +973,7 @@
       <!-- 空状态 -->
       <div class="main-display">
         <div class="empty-state">
-          <i class="fas fa-images" style="font-size: 48px; margin-bottom: 16px; opacity: 0.4;"></i>
+          <i class="fa fa-images" style="font-size: 48px; margin-bottom: 16px; opacity: 0.4;"></i>
           <p style="font-size: 16px; margin-bottom: 6px;">还没有图片或视频</p>
           <p style="font-size: 13px; opacity: 0.6;">点击上方"添加文件"按钮上传</p>
         </div>
@@ -630,22 +985,51 @@
     <div class="article-section" style="width: 40%; display: flex; flex-direction: column;">
       <div class="article-panel glass" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
         <!-- 文章标题栏 -->
-        <div style="padding: 16px 20px 12px; border-bottom: 1px solid rgba(233,30,99,0.08); display: flex; align-items: center; justify-content: space-between;">
-          <h2 class="serif" style="font-size: 15px; font-weight: 600; color: #C2185B; display: flex; align-items: center; gap: 8px;">
-            <i class="fas fa-feather-alt" style="font-size: 13px; color: #D4A574;"></i>
-            {% if md_name %}{{ md_name }}{% else %}文章{% endif %}
-          </h2>
-          <div style="display: flex; gap: 6px;">
-            {% if md_content %}
-            <button id="btn-edit-inner" onclick="toggleEdit()" class="btn-ghost" style="padding: 5px 12px; font-size: 12px;">
-              <i class="fas fa-pen"></i> 编辑
+        <div style="padding: 14px 18px 10px; border-bottom: 1px solid rgba(233,30,99,0.08);">
+          <!-- 文章选择器行 -->
+          <div class="article-selector" style="margin-bottom: 8px;">
+            <h2 class="serif" style="font-size: 15px; font-weight: 600; color: #C2185B; display: flex; align-items: center; gap: 6px; margin: 0;">
+              <i class="fa fa-pencil" style="font-size: 13px; color: #D4A574;"></i>
+              文章
+            </h2>
+            <div class="article-select-wrapper">
+              <select id="article-select" class="article-select" onchange="switchArticle(this.value)">
+                <option value="">加载中...</option>
+              </select>
+              <i class="fa fa-chevron-down article-select-arrow"></i>
+            </div>
+            <span id="article-count-badge" class="article-count-badge">0篇</span>
+            <button onclick="showCreateArticleModal()" class="btn-ghost" style="padding: 5px 12px; font-size: 12px;" title="新建文章">
+              <i class="fa fa-plus"></i> 新建
             </button>
-            {% endif %}
-            {% if not md_content %}
-            <button onclick="startNewArticle()" class="btn-ghost" style="padding: 5px 12px; font-size: 12px;">
-              <i class="fas fa-plus"></i> 新建
+            <button id="btn-rename-article" onclick="showRenameArticleModal()" class="btn-ghost" style="padding: 5px 10px; font-size: 12px;" title="重命名当前文章">
+              <i class="fa fa-pencil-square-o"></i>
             </button>
-            {% endif %}
+          </div>
+          <!-- 作者和操作行 -->
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span id="article-author-tag" class="article-author-tag" style="display: none;">
+              <i class="fa fa-user"></i>
+              <span id="current-author-name"></span>
+            </span>
+            <div style="display: flex; gap: 6px;">
+              {% if md_content %}
+              <button id="btn-edit-inner" onclick="toggleEdit()" class="btn-ghost" style="padding: 5px 12px; font-size: 12px;">
+                <i class="fa fa-pen"></i> 编辑
+              </button>
+              {% endif %}
+              {% if not md_content %}
+              <button onclick="startNewArticle()" class="btn-ghost" style="padding: 5px 12px; font-size: 12px;">
+                <i class="fa fa-plus"></i> 新建
+              </button>
+              {% endif %}
+              <button id="btn-delete-article" onclick="deleteCurrentArticle()" class="btn-ghost" style="padding: 5px 10px; font-size: 12px; color: #dc2626;" title="删除当前文章">
+                <i class="fa fa-trash-o"></i>
+              </button>
+              <button id="btn-move-article" onclick="showMoveArticleModal()" class="btn-ghost" style="padding: 5px 10px; font-size: 12px; display:none;" title="移动到其他章节">
+                <i class="fa fa-arrows"></i> 移动章节
+              </button>
+            </div>
           </div>
         </div>
 
@@ -657,7 +1041,7 @@
               {{ md_html|safe }}
             {% else %}
               <div style="text-align: center; padding: 40px 0; color: #c4a0b0;">
-                <i class="fas fa-feather-alt" style="font-size: 32px; margin-bottom: 12px; opacity: 0.3; display: block;"></i>
+                <i class="fa fa-pencil" style="font-size: 32px; margin-bottom: 12px; opacity: 0.3; display: block;"></i>
                 <p>暂无文章</p>
                 <p style="font-size: 12px; margin-top: 4px; opacity: 0.6;">点击"新建"开始书写回忆</p>
               </div>
@@ -665,6 +1049,44 @@
           </div>
           <!-- 编辑模式 -->
           <div id="article-edit" style="display: none;">
+            <div class="rich-toolbar">
+              <button class="rich-toolbar-btn" onclick="insertFormat('bold')" title="加粗 (Ctrl+B)"><b>B</b></button>
+              <button class="rich-toolbar-btn" onclick="insertFormat('italic')" title="斜体 (Ctrl+I)"><i>I</i></button>
+              <button class="rich-toolbar-btn" onclick="insertFormat('strikethrough')" title="删除线"><s>S</s></button>
+              <div class="rich-toolbar-divider"></div>
+              <button class="rich-toolbar-btn" onclick="insertFormat('h1')" title="一级标题">H1</button>
+              <button class="rich-toolbar-btn" onclick="insertFormat('h2')" title="二级标题">H2</button>
+              <button class="rich-toolbar-btn" onclick="insertFormat('h3')" title="三级标题">H3</button>
+              <div class="rich-toolbar-divider"></div>
+              <button class="rich-toolbar-btn" onclick="insertFormat('ul')" title="无序列表">
+                <i class="fa fa-list-ul"></i>
+              </button>
+              <button class="rich-toolbar-btn" onclick="insertFormat('ol')" title="有序列表">
+                <i class="fa fa-list-ol"></i>
+              </button>
+              <button class="rich-toolbar-btn" onclick="insertFormat('quote')" title="引用">
+                <i class="fa fa-quote-left"></i>
+              </button>
+              <div class="rich-toolbar-divider"></div>
+              <button class="rich-toolbar-btn" onclick="insertFormat('hr')" title="分割线">—</button>
+              <button class="rich-toolbar-btn" onclick="insertFormat('link')" title="链接">
+                <i class="fa fa-link"></i>
+              </button>
+              <button class="rich-toolbar-btn" onclick="insertFormat('image')" title="图片">
+                <i class="fa fa-image"></i>
+              </button>
+              <button class="rich-toolbar-btn" onclick="insertFormat('code')" title="行内代码">&lt;/&gt;</button>
+            </div>
+            <!-- 编辑模式作者选择 -->
+            <div style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: rgba(255,255,255,0.6); border: 1.5px solid rgba(233,30,99,0.15); border-top: none; border-radius: 0 0 10px 10px;">
+              <span style="font-size: 11px; color: #999; white-space: nowrap;"><i class="fa fa-user" style="margin-right: 4px;"></i>作者：</span>
+              <select id="edit-author-select" class="article-select" style="flex: 1; min-width: 100px; padding: 4px 24px 4px 8px; font-size: 12px;" onchange="toggleCustomAuthor('edit', this.value)">
+                <option value="">加载中...</option>
+              </select>
+              <input type="text" id="edit-author-custom" placeholder="输入名字" maxlength="20"
+                style="display:none; flex:1; min-width:80px; padding:4px 8px; font-size:12px; border-radius:6px; border:1.5px solid rgba(233,30,99,0.3); outline:none; color:#C2185B;"
+                oninput="document.getElementById('edit-author-custom').dataset.value=this.value">
+            </div>
             <textarea id="edit-area" class="edit-area">{{ md_content or '' }}</textarea>
             <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
               <button onclick="cancelEdit()" class="btn-outline" style="padding: 6px 16px; font-size: 13px;">取消</button>
@@ -677,45 +1099,45 @@
   </div>
 
   <!-- 底部导航 -->
-  <div style="display: flex; justify-content: center; gap: 16px; padding: 20px 0 10px;">
+  <nav id="bottom-nav" style="display: flex; justify-content: center; gap: 16px; padding: 20px 0 30px; position: relative; z-index: 10;">
     {% if prev_chapter %}
     <a href="/chapter/{{ prev_chapter }}" class="btn-outline" style="display: flex; align-items: center; gap: 8px; text-decoration: none;">
-      <i class="fas fa-chevron-left" style="font-size: 11px;"></i>
+      <i class="fa fa-chevron-left" style="font-size: 11px;"></i>
       {{ prev_chapter }}
     </a>
     {% endif %}
     {% if next_chapter %}
     <a href="/chapter/{{ next_chapter }}" class="btn-outline" style="display: flex; align-items: center; gap: 8px; text-decoration: none;">
       {{ next_chapter }}
-      <i class="fas fa-chevron-right" style="font-size: 11px;"></i>
+      <i class="fa fa-chevron-right" style="font-size: 11px;"></i>
     </a>
     {% endif %}
-  </div>
+  </nav>
 </div>
 
 <!-- 全屏灯箱 -->
 <div id="lightbox" class="lightbox" onclick="closeLightbox()">
-  <button class="lb-close" onclick="closeLightbox()"><i class="fas fa-times"></i></button>
-  <button class="lb-nav" style="left: 20px;" onclick="event.stopPropagation(); navLightbox(-1)"><i class="fas fa-chevron-left"></i></button>
+  <button class="lb-close" onclick="closeLightbox()"><i class="fa fa-times"></i></button>
+  <button class="lb-nav" style="left: 20px;" onclick="event.stopPropagation(); navLightbox(-1)"><i class="fa fa-chevron-left"></i></button>
   <div id="lb-content" style="display: flex; align-items: center; justify-content: center;"></div>
-  <button class="lb-nav" style="right: 20px;" onclick="event.stopPropagation(); navLightbox(1)"><i class="fas fa-chevron-right"></i></button>
+  <button class="lb-nav" style="right: 20px;" onclick="event.stopPropagation(); navLightbox(1)"><i class="fa fa-chevron-right"></i></button>
   <div class="lb-thumbs" id="lb-thumbs" onclick="event.stopPropagation()"></div>
 </div>
 
 <!-- 视频全屏播放器 -->
 <div id="video-player" class="video-player">
   <button onclick="closeVideoPlayer()" style="position:absolute;top:16px;right:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
-    <i class="fas fa-times"></i>
+    <i class="fa fa-times"></i>
   </button>
-  <video id="vp-video" onclick="togglePlayPause()"></video>
+  <video id="vp-video" onclick="toggleVideoPlayPause()"></video>
   <div class="vp-controls">
-    <button id="vp-play-btn" onclick="togglePlayPause()"><i class="fas fa-play"></i></button>
+    <button id="vp-play-btn" onclick="toggleVideoPlayPause()"><i class="fa fa-play"></i></button>
     <span class="vp-time" id="vp-current">0:00</span>
     <input type="range" class="vp-progress" id="vp-progress" min="0" max="100" value="0" oninput="seekVideo(this.value)">
     <span class="vp-time" id="vp-duration">0:00</span>
-    <button onclick="toggleMute()" id="vp-mute-btn"><i class="fas fa-volume-up"></i></button>
+    <button onclick="toggleMute()" id="vp-mute-btn"><i class="fa fa-volume-up"></i></button>
     <input type="range" class="vp-volume" id="vp-volume" min="0" max="100" value="80" oninput="changeVolume(this.value)">
-    <button onclick="toggleFullscreen()" title="全屏"><i class="fas fa-expand"></i></button>
+    <button onclick="toggleFullscreen()" title="全屏"><i class="fa fa-expand"></i></button>
   </div>
 </div>
 
@@ -724,7 +1146,11 @@
   <div class="modal-box">
     <h3 class="serif" style="font-size: 18px; font-weight: 700; color: #C2185B; margin-bottom: 16px;">重命名文件</h3>
     <input type="text" id="rf-old" style="display:none;">
-    <input type="text" id="rf-new" placeholder="输入新文件名" onkeydown="if(event.key==='Enter')renameFile()">
+    <input type="text" id="rf-ext" style="display:none;">
+    <div style="display: flex; align-items: center; gap: 0;">
+      <input type="text" id="rf-new" placeholder="输入新文件名" style="flex:1;border-radius:8px 0 0 8px;" onkeydown="if(event.key==='Enter')renameFile()">
+      <span id="rf-ext-display" style="padding:8px 12px; background:#f5f5f5; border:1.5px solid rgba(233,30,99,0.2); border-left:none; border-radius:0 8px 8px 0; color:#999; font-size:13px; white-space:nowrap;"></span>
+    </div>
     <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
       <button onclick="document.getElementById('modal-rename-file').classList.remove('active')" class="btn-outline">取消</button>
       <button onclick="renameFile()" class="btn-pink">确认</button>
@@ -745,8 +1171,149 @@
   </div>
 </div>
 
+<!-- 新建文章弹窗 -->
+<div id="modal-create-article" class="modal-overlay" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="modal-box">
+    <h3 class="serif" style="font-size: 18px; font-weight: 700; color: #C2185B; margin-bottom: 16px;">
+      <i class="fa fa-file-text-o" style="color: #D4A574; margin-right: 6px;"></i>新建文章
+    </h3>
+    <label style="font-size: 0.85rem; color: #888;">文章标题</label>
+    <input type="text" id="new-article-title" placeholder="输入文章标题" maxlength="50"
+      style="margin-bottom: 10px;" onkeydown="if(event.key==='Enter')createNewArticle()">
+    <label style="font-size: 0.85rem; color: #888;">作者</label>
+    <div class="article-select-wrapper" style="margin-bottom: 4px;">
+      <select id="new-article-author-select" class="article-select" onchange="toggleCustomAuthor('new', this.value)">
+        <option value="">加载用户中...</option>
+      </select>
+      <i class="fa fa-chevron-down article-select-arrow"></i>
+    </div>
+    <input type="text" id="new-article-author-custom" placeholder="输入自定义名字" maxlength="20"
+      style="display:none; width:100%; padding:8px 12px; font-size:13px; border-radius:8px; border:1.5px solid rgba(233,30,99,0.3); outline:none; color:#C2185B; margin-bottom:10px;"
+      oninput="document.getElementById('new-article-author-custom').dataset.value=this.value">
+    <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+      <button onclick="document.getElementById('modal-create-article').classList.remove('active')" class="btn-outline">取消</button>
+      <button onclick="createNewArticle()" class="btn-pink">创建</button>
+    </div>
+  </div>
+</div>
+
+<!-- 删除文章确认弹窗 -->
+<div id="modal-delete-article" class="modal-overlay" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="modal-box">
+    <h3 class="serif" style="font-size: 18px; font-weight: 700; color: #dc2626; margin-bottom: 8px;">确认删除</h3>
+    <p style="color: #7a5a6a; margin-bottom: 20px; line-height: 1.6;">
+      确定要删除文章 "<span id="delete-article-title" style="color: #C2185B; font-weight: 600;"></span>" 吗？<br>
+      <span style="font-size: 12px; color: #c4a0b0;">此操作不可恢复</span>
+    </p>
+    <input type="text" id="delete-article-key" style="display:none;">
+    <div style="display: flex; justify-content: flex-end; gap: 8px;">
+      <button onclick="document.getElementById('modal-delete-article').classList.remove('active')" class="btn-outline">取消</button>
+      <button onclick="deleteArticleAction()" class="btn-danger">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- 重命名文章弹窗 -->
+<div id="modal-rename-article" class="modal-overlay" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="modal-box">
+    <h3 class="serif" style="font-size: 18px; font-weight: 700; color: #C2185B; margin-bottom: 16px;">
+      <i class="fa fa-pencil-square-o" style="color: #D4A574; margin-right: 6px;"></i>重命名文章
+    </h3>
+    <label style="font-size: 0.85rem; color: #888;">文章标题</label>
+    <input type="text" id="rename-article-title" placeholder="输入新标题" maxlength="50"
+      style="margin-bottom: 10px;" onkeydown="if(event.key==='Enter')renameArticleAction()">
+    <input type="hidden" id="rename-article-key">
+    <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+      <button onclick="document.getElementById('modal-rename-article').classList.remove('active')" class="btn-outline">取消</button>
+      <button onclick="renameArticleAction()" class="btn-pink">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- 移动文件/文章到其他章节弹窗 -->
+<div id="modal-move-to-chapter" class="modal-overlay" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="modal-box">
+    <h3 class="serif" style="font-size:18px; font-weight:700; color:#C2185B; margin-bottom:16px;">
+      <i class="fa fa-arrows" style="color:#D4A574; margin-right:6px;"></i><span id="move-modal-title">移动到其他章节</span>
+    </h3>
+    <p style="font-size:13px; color:#666; margin-bottom:12px;">
+      将 "<span id="move-item-name" style="color:#C2185B; font-weight:600;"></span>" 移动到：
+    </p>
+    <input type="hidden" id="move-item-type"> <!-- file 或 article -->
+    <input type="hidden" id="move-item-path">
+    <input type="hidden" id="move-article-key">
+    <div id="move-chapter-list" style="border:1.5px solid rgba(233,30,99,0.15); border-radius:10px; max-height:280px; overflow-y:auto; margin-bottom:14px;">
+      <div style="padding:16px; text-align:center; color:#bbb; font-size:13px;">加载章节列表...</div>
+    </div>
+    <p style="font-size:11px; color:#aaa;">注意：如果目标章节已有同名文件，会自动添加序号区分</p>
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px;">
+      <button onclick="document.getElementById('modal-move-to-chapter').classList.remove('active')" class="btn-outline" style="padding:6px 16px; font-size:13px;">取消</button>
+      <button onclick="confirmMoveToChapter()" class="btn-pink" style="padding:6px 16px; font-size:13px;">确认移动</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div id="toast" class="toast"></div>
+
+<!-- 全局音乐播放器 -->
+<audio id="bgm-audio" preload="auto" loop></audio>
+<div id="music-player" class="music-player">
+  <button class="music-icon" onclick="toggleMusicPlayer()" title="展开/收起"><i class="fa fa-music"></i></button>
+  <div class="music-info">
+    <div class="music-name" id="music-name">未播放</div>
+  </div>
+  <div class="music-controls">
+    <button class="music-btn" onclick="playPrevMusic()" title="上一首"><i class="fa fa-step-backward"></i></button>
+    <button class="music-btn play-btn" onclick="togglePlayPause()" id="music-play-btn" title="播放/暂停"><i class="fa fa-play"></i></button>
+    <button class="music-btn" onclick="playNextMusic()" title="下一首（随机）"><i class="fa fa-step-forward"></i></button>
+    <input type="range" class="music-volume" id="music-volume" min="0" max="100" value="50" oninput="changeMusicVolume(this.value)" title="音量">
+    <button class="music-btn" onclick="showMusicSettings()" title="音乐设置"><i class="fa fa-cog"></i></button>
+    <button class="music-close-btn" onclick="closeMusicPlayer()" title="关闭播放器"><i class="fa fa-times"></i></button>
+  </div>
+</div>
+
+<!-- 音乐设置弹窗（章节页面增强版：可指定章节专属音乐） -->
+<div id="modal-music-settings" class="modal-overlay" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="modal-box" style="max-width:480px;">
+    <h3 class="serif" style="font-size:18px; font-weight:700; color:#C2185B; margin-bottom:16px;">
+      <i class="fa fa-music" style="color:#D4A574; margin-right:6px;"></i>音乐设置
+    </h3>
+    <label style="font-size:0.85rem; color:#888;">切换章节时自动换歌</label>
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+      <label style="display:flex; align-items:center; cursor:pointer; font-size:13px; color:#555;">
+        <input type="checkbox" id="music-auto-switch" onchange="saveMusicSettings()" checked style="margin-right:6px; accent-color:#E91E63;"> 自动切换
+      </label>
+      <span style="font-size:11px; color:#aaa;">开启后进入/切换章节自动换歌</span>
+    </div>
+    <label style="font-size:0.85rem; color:#888;">进入页面自动播放</label>
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+      <label style="display:flex; align-items:center; cursor:pointer; font-size:13px; color:#555;">
+        <input type="checkbox" id="music-auto-play" onchange="saveMusicSettings()" checked style="margin-right:6px; accent-color:#E91E63;"> 自动播放
+      </label>
+      <span style="font-size:11px; color:#aaa;">开启后进入页面自动开始播放音乐</span>
+    </div>
+
+    <label style="font-size:0.85rem; color:#888;">当前章节专属音乐</label>
+    <div style="display:flex; gap:8px; margin-bottom:14px; align-items:center;">
+      <select id="chapter-music-select" onchange="saveChapterMusic()" style="flex:1; padding:7px 28px 7px 12px; border-radius:8px; border:1.5px solid rgba(233,30,99,0.2); background:rgba(255,255,255,0.8); color:#C2185B; font-size:13px; outline:none; appearance:none;-webkit-appearance:none;">
+        <option value="">随机播放</option>
+      </select>
+      <i class="fa fa-chevron-down" style="font-size:10px; color:#E91E63; margin-left:-20px; pointer-events:none;"></i>
+      <span id="chapter-music-status" style="font-size:11px; color:#aaa; white-space:nowrap;"></span>
+    </div>
+
+    <label style="font-size:0.85rem; color:#888;">可用音乐列表</label>
+    <div class="music-settings-content" id="music-list-container" style="border:1.5px solid rgba(233,30,99,0.15); border-radius:10px; max-height:200px; overflow-y:auto; margin-bottom:6px;">
+      <div style="padding:20px; text-align:center; color:#bbb; font-size:13px;">加载中...</div>
+    </div>
+    <p style="font-size:0.75rem; color:#aaa; margin-top:6px;">将音频文件放入 <span id="music-dir-hint" style="color:#C2185B;">K:\Pictures\音乐</span> 即可使用</p>
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+      <button onclick="document.getElementById('modal-music-settings').classList.remove('active')" class="btn-outline" style="padding:6px 16px; font-size:13px;">关闭</button>
+      <button onclick="loadMusicList()" class="btn-pink" style="padding:6px 16px; font-size:13px;">刷新列表</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // 文件数据
@@ -756,6 +1323,381 @@ const files = [
   {% endfor %}
 ];
 let currentIdx = 0;
+
+/* ========== 背景音乐系统（章节增强版）========== */
+const CHAPTER_NAME = '{{ chapter_name }}';
+let allMusicList = [];
+let currentMusicName = '';
+let isMusicPlaying = false;
+let musicPlayerCollapsed = false;
+let musicErrorCount = 0;
+let musicErrorTimer = null;
+let musicPlayLock = false;
+
+const bgmAudio = document.getElementById('bgm-audio');
+
+bgmAudio.addEventListener('ended', function() {
+  musicErrorCount = 0;
+  if (!bgmAudio.loop) playNextMusic();
+});
+bgmAudio.addEventListener('error', function(e) {
+  const code = bgmAudio.error ? bgmAudio.error.code : 0;
+  console.warn('音乐加载失败:', currentMusicName || bgmAudio.src, 'code=' + code);
+  isMusicPlaying = false;
+  musicErrorCount++;
+  if (musicErrorCount > 5) {
+    console.warn('连续错误过多，停止自动跳过');
+    bgmAudio.removeAttribute('src');
+    bgmAudio.load();
+    currentMusicName = '';
+    updateMusicUI();
+    return;
+  }
+  if (currentMusicName && code === 4) {
+    allMusicList = allMusicList.filter(m => m.name !== currentMusicName);
+    currentMusicName = '';
+  }
+  updateMusicUI();
+  renderMusicList();
+  clearTimeout(musicErrorTimer);
+  musicErrorTimer = setTimeout(function() {
+    if (allMusicList.length > 0) playNextMusic();
+  }, 500);
+});
+
+async function loadMusicList() {
+  try {
+    const res = await fetch('/api/music/list');
+    const data = await res.json();
+    if (data.ok) {
+      allMusicList = data.musics;
+      renderMusicList();
+      renderChapterMusicSelect();
+      document.getElementById('music-dir-hint').textContent = data.music_dir || 'K:\\Pictures\\音乐';
+    }
+  } catch(e) { console.error('加载音乐列表失败:', e); }
+}
+
+function renderMusicList() {
+  const container = document.getElementById('music-list-container');
+  if (!allMusicList.length) {
+    container.innerHTML = '<div style="padding:20px; text-align:center; color:#bbb; font-size:13px;"><i class="fa fa-music" style="display:block; font-size:24px; margin-bottom:6px; opacity:0.4;"></i>暂无音乐文件</div>';
+    return;
+  }
+  container.innerHTML = allMusicList.map(m => `
+    <div class="music-list-item${m.name === currentMusicName ? ' selected' : ''}" onclick="playSpecificMusic('${m.name}')">
+      <i class="fa fa-music" style="color:#E91E63; font-size:12px; width:16px;"></i>
+      <span class="music-item-name">${m.name}</span>
+      <span class="music-item-size">${m.size_display}</span>
+      ${m.name === currentMusicName ? '<i class="fa fa-volume-up" style="color:#E91E63; font-size:11px;"></i>' : ''}
+    </div>
+  `).join('');
+}
+
+function renderChapterMusicSelect() {
+  const select = document.getElementById('chapter-music-select');
+  if (!select) return;
+  let html = '<option value="">随机播放</option>';
+  allMusicList.forEach(m => { html += `<option value="${m.name}">${m.name}</option>`; });
+  select.innerHTML = html;
+}
+
+function playSpecificMusic(name) {
+  if (!name) return;
+  if (musicPlayLock) { bgmAudio.pause(); }
+  musicPlayLock = true;
+  currentMusicName = name;
+  bgmAudio.src = '/api/music/serve?f=' + encodeURIComponent(name);
+  bgmAudio.volume = parseInt(document.getElementById('music-volume').value) / 100;
+  const playPromise = bgmAudio.play();
+  if (playPromise !== undefined) {
+    playPromise.then(function() {
+      musicPlayLock = false;
+      isMusicPlaying = true;
+      musicErrorCount = 0;
+      updateMusicUI();
+      showMusicPlayer();
+      renderMusicList();
+    }).catch(function(e) {
+      musicPlayLock = false;
+      if (e.name === 'AbortError') return;
+      if (e.name === 'NotAllowedError') {
+        console.log('浏览器阻止自动播放，等待用户交互');
+        isMusicPlaying = false;
+        updateMusicUI();
+        return;
+      }
+      console.error('播放失败:', name, e);
+      isMusicPlaying = false;
+      updateMusicUI();
+    });
+  } else {
+    musicPlayLock = false;
+  }
+}
+
+function playRandomMusic() {
+  if (!allMusicList.length) return;
+  const idx = Math.floor(Math.random() * allMusicList.length);
+  playSpecificMusic(allMusicList[idx].name);
+}
+function playPrevMusic() { playRandomMusic(); }
+function playNextMusic() { playRandomMusic(); }
+
+function togglePlayPause() {
+  if (bgmAudio.error) {
+    bgmAudio.removeAttribute('src');
+    bgmAudio.load();
+    currentMusicName = '';
+    isMusicPlaying = false;
+    musicErrorCount = 0;
+    musicPlayLock = false;
+    updateMusicUI();
+    if (allMusicList.length > 0) { playNextMusic(); return; }
+    return;
+  }
+  if (!bgmAudio.src && allMusicList.length > 0) { musicErrorCount = 0; playRandomMusic(); return; }
+  if (isMusicPlaying || musicPlayLock) {
+    bgmAudio.pause();
+    isMusicPlaying = false;
+    musicPlayLock = false;
+  } else {
+    musicErrorCount = 0;
+    bgmAudio.play().then(function() { isMusicPlaying = true; }).catch(function(e) {
+      musicPlayLock = false;
+      if (e.name === 'AbortError') return;
+      if (e.name === 'NotAllowedError') { console.log('浏览器阻止自动播放'); return; }
+      console.error('播放失败:', e);
+    });
+  }
+  updateMusicUI();
+}
+
+function updateMusicUI() {
+  document.getElementById('music-play-btn').innerHTML = isMusicPlaying ? '<i class="fa fa-pause"></i>' : '<i class="fa fa-play"></i>';
+  document.getElementById('music-name').textContent = currentMusicName || (allMusicList.length > 0 ? '未播放' : '暂无音乐文件');
+  // 更新头部音乐按钮图标
+  const headerBtn = document.getElementById('header-music-btn');
+  if (headerBtn) {
+    const icon = headerBtn.querySelector('i');
+    if (icon) {
+      icon.className = isMusicPlaying ? 'fa fa-music' : 'fa fa-music';
+      icon.style.animation = isMusicPlaying ? 'pulse 1.5s ease-in-out infinite' : '';
+    }
+  }
+}
+
+function changeMusicVolume(val) {
+  bgmAudio.volume = val / 100;
+  localStorage.setItem('musicVolume', val);
+}
+
+function showMusicPlayer() {
+  const player = document.getElementById('music-player');
+  player.classList.remove('hidden', 'collapsed');
+  const headerBtn = document.getElementById('header-music-btn');
+  if (headerBtn) {
+    headerBtn.style.background = 'rgba(233,30,99,0.15)';
+    headerBtn.style.color = '#C2185B';
+    headerBtn.style.borderColor = 'rgba(233,30,99,0.35)';
+    headerBtn.style.boxShadow = '0 2px 8px rgba(233,30,99,0.15)';
+  }
+}
+function closeMusicPlayer() {
+  document.getElementById('music-player').classList.add('hidden');
+  document.getElementById('music-player').classList.remove('collapsed');
+  const headerBtn = document.getElementById('header-music-btn');
+  if (headerBtn) {
+    headerBtn.style.background = 'rgba(233,30,99,0.06)';
+    headerBtn.style.color = '#999';
+    headerBtn.style.borderColor = 'rgba(233,30,99,0.12)';
+    headerBtn.style.boxShadow = 'none';
+  }
+}
+function toggleMusicPlayer() {
+  const player = document.getElementById('music-player');
+  if (player.classList.contains('hidden')) {
+    showMusicPlayer();
+  } else {
+    closeMusicPlayer();
+  }
+}
+
+async function showMusicSettings() {
+  await loadMusicList();
+  try {
+    const [settingsRes, chapterRes] = await Promise.all([
+      fetch('/api/music/settings'),
+      fetch('/api/chapter/music?chapter=' + encodeURIComponent(CHAPTER_NAME))
+    ]);
+    const settingsData = await settingsRes.json();
+    const chapterData = await chapterRes.json();
+    if (settingsData.ok) {
+      document.getElementById('music-auto-switch').checked = settingsData.settings.auto_switch !== false;
+      document.getElementById('music-auto-play').checked = settingsData.settings.auto_play !== false;
+    }
+    if (chapterData.ok && chapterData.music) {
+      const sel = document.getElementById('chapter-music-select');
+      sel.value = chapterData.music;
+      document.getElementById('chapter-music-status').textContent = '已设置';
+    }
+  } catch(e) {}
+  document.getElementById('modal-music-settings').classList.add('active');
+}
+
+async function saveChapterMusic() {
+  const val = document.getElementById('chapter-music-select').value;
+  try {
+    await fetch('/api/chapter/music', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ chapter: CHAPTER_NAME, music: val })
+    });
+    document.getElementById('chapter-music-status').textContent = val ? '已设置 ✓' : '随机播放';
+    toast(val ? '已设置章节专属音乐：' + val : '已取消专属音乐，将随机播放');
+  } catch(e) {}
+}
+
+async function saveMusicSettings() {
+  const autoSwitch = document.getElementById('music-auto-switch').checked;
+  const autoPlay = document.getElementById('music-auto-play').checked;
+  try {
+    await fetch('/api/music/settings', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ settings: { auto_switch: autoSwitch, auto_play: autoPlay } })
+    });
+  } catch(e) {}
+}
+
+// 章节页面初始化：根据配置自动播放音乐
+function saveMusicState() {
+  try {
+    sessionStorage.setItem('bgm_state', JSON.stringify({
+      name: currentMusicName,
+      src: bgmAudio.src,
+      time: bgmAudio.currentTime,
+      playing: !bgmAudio.paused && !!bgmAudio.src,
+      volume: bgmAudio.volume,
+      ts: Date.now()
+    }));
+  } catch(e) {}
+}
+
+function restoreMusicState() {
+  try {
+    var raw = sessionStorage.getItem('bgm_state');
+    if (!raw) return null;
+    var s = JSON.parse(raw);
+    if (!s || !s.name || !s.src || Date.now() - s.ts > 3600000) { sessionStorage.removeItem('bgm_state'); return null; }
+    return s;
+  } catch(e) { return null; }
+}
+
+function resumeSavedMusic(saved, autoPlay) {
+  currentMusicName = saved.name;
+  bgmAudio.src = saved.src;
+  bgmAudio.volume = saved.volume || 0.5;
+  bgmAudio.addEventListener('canplay', function onCanPlay() {
+    bgmAudio.removeEventListener('canplay', onCanPlay);
+    bgmAudio.currentTime = saved.time || 0;
+    if (autoPlay) {
+      var p = bgmAudio.play();
+      if (p) p.then(function() { isMusicPlaying = true; updateMusicUI(); renderMusicList(); }).catch(function(){});
+    } else {
+      isMusicPlaying = false;
+      updateMusicUI();
+      renderMusicList();
+    }
+  });
+}
+
+window.addEventListener('beforeunload', saveMusicState);
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'hidden') saveMusicState();
+});
+
+async function initMusicForChapter() {
+  const savedVolume = localStorage.getItem('musicVolume');
+  if (savedVolume) {
+    document.getElementById('music-volume').value = savedVolume;
+    bgmAudio.volume = savedVolume / 100;
+  } else {
+    bgmAudio.volume = 0.5;
+  }
+  await loadMusicList();
+  showMusicPlayer();
+  updateMusicUI();
+
+  if (allMusicList.length === 0) return;
+
+  try {
+    const [settingsRes, chapterRes] = await Promise.all([
+      fetch('/api/music/settings'),
+      fetch('/api/chapter/music?chapter=' + encodeURIComponent(CHAPTER_NAME))
+    ]);
+    const settingsData = await settingsRes.json();
+    const chapterData = await chapterRes.json();
+
+    const autoPlay = settingsData.ok && settingsData.settings.auto_play !== false;
+    const autoSwitch = settingsData.ok && settingsData.settings.auto_switch !== false;
+
+    if (settingsData.ok) {
+      document.getElementById('music-auto-switch').checked = autoSwitch;
+      document.getElementById('music-auto-play').checked = autoPlay;
+    }
+    if (chapterData.ok && chapterData.music) {
+      document.getElementById('chapter-music-select').value = chapterData.music;
+      document.getElementById('chapter-music-status').textContent = '已设置';
+    }
+
+    var hasChapterMusic = chapterData.ok && chapterData.music;
+
+    if (hasChapterMusic) {
+      playSpecificMusic(chapterData.music);
+      if (!autoPlay) {
+        bgmAudio.addEventListener('canplay', function onPauseCanPlay() {
+          bgmAudio.removeEventListener('canplay', onPauseCanPlay);
+          bgmAudio.pause();
+          isMusicPlaying = false;
+          updateMusicUI();
+        });
+      }
+      return;
+    }
+
+    var savedState = restoreMusicState();
+
+    if (!autoSwitch) {
+      if (savedState && savedState.playing) {
+        resumeSavedMusic(savedState, autoPlay);
+        return;
+      }
+      if (autoPlay) {
+        playRandomMusic();
+        return;
+      }
+      return;
+    }
+
+    playRandomMusic();
+    if (!autoPlay) {
+      bgmAudio.addEventListener('canplay', function onPauseRandom() {
+        bgmAudio.removeEventListener('canplay', onPauseRandom);
+        bgmAudio.pause();
+        isMusicPlaying = false;
+        updateMusicUI();
+      });
+    }
+  } catch(e) {
+    var saved = restoreMusicState();
+    if (saved && saved.playing) {
+      resumeSavedMusic(saved, true);
+      return;
+    }
+    if (allMusicList.length > 0) playRandomMusic();
+  }
+}
 
 // 初始化画廊
 function initGallery() {
@@ -767,15 +1709,54 @@ function initGallery() {
 function updateMainDisplay() {
   const f = files[currentIdx];
   const container = document.getElementById('main-content');
+  const actionsContainer = document.getElementById('main-display-actions');
   if (!f) { container.innerHTML = ''; return; }
 
-  if (f.type === 'image') {
-    container.innerHTML = '<img src="/file/' + encodeURIComponent(f.path) + '" alt="' + f.name + '" class="main-display-img">';
+  // 更新操作按钮 - 只在编辑模式下显示删除、重命名和移动按钮
+  if (editing) {
+    actionsContainer.innerHTML = `
+      <button class="main-action-btn delete-btn" onclick="confirmDeleteFile('${f.path}', '${f.name}')" title="删除">
+        <i class="fa fa-trash"></i>
+      </button>
+      <button class="main-action-btn rename-btn" onclick="showRenameFile('${f.path}', '${f.name}')" title="重命名">
+        <i class="fa fa-pencil"></i>
+      </button>
+      <button class="main-action-btn" style="background:rgba(33,150,243,0.9); color:white;" onclick="showMoveFileModal('${f.path}', '${f.name}')" title="移动到其他章节">
+        <i class="fa fa-arrows"></i>
+      </button>
+      <button onclick="openLightbox()" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.2);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.25);color:white;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+        <i class="fa fa-expand"></i>
+      </button>
+    `;
   } else {
-    container.innerHTML = '<video src="/file/' + encodeURIComponent(f.path) + '" preload="metadata" class="main-display-video"></video>' +
-      '<div class="video-overlay" onclick="openVideoPlayer()">' +
-        '<div class="play-icon"><i class="fas fa-play" style="margin-left:3px;"></i></div>' +
-      '</div>';
+    actionsContainer.innerHTML = `
+      <button onclick="openLightbox()" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.2);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.25);color:white;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+        <i class="fa fa-expand"></i>
+      </button>
+    `;
+  }
+
+  if (f.type === 'image') {
+    container.innerHTML = `
+      <div class="main-display-content">
+        <div class="main-display-header">
+          <div class="file-name">${f.name}</div>
+        </div>
+        <img src="/file/${encodeURIComponent(f.path)}" alt="${f.name}" class="main-display-img">
+      </div>
+    `;
+  } else {
+    container.innerHTML = `
+      <div class="main-display-content">
+        <div class="main-display-header">
+          <div class="file-name">${f.name}</div>
+        </div>
+        <video src="/file/${encodeURIComponent(f.path)}" preload="metadata" class="main-display-video"></video>
+        <div class="video-overlay" onclick="openVideoPlayer()">
+          <div class="play-icon"><i class="fa fa-play" style="margin-left:3px;"></i></div>
+        </div>
+      </div>
+    `;
   }
   // 更新缩略图选中状态
   document.querySelectorAll('.thumb-item').forEach((el, i) => {
@@ -788,23 +1769,47 @@ function updateMainDisplay() {
 
 function renderThumbnails() {
   const list = document.getElementById('thumb-list');
-  list.innerHTML = files.map((f, i) => {
+  const html = files.map((f, i) => {
     if (f.type === 'image') {
-      return '<div class="thumb-item' + (i === currentIdx ? ' active' : '') + '" onclick="currentIdx=' + i + ';updateMainDisplay();">' +
-        '<img src="/file/' + encodeURIComponent(f.path) + '" alt="' + f.name + '" loading="lazy">' +
-      '</div>';
+      return `<div class="thumb-item${i === currentIdx ? ' active' : ''}" onclick="currentIdx=${i};updateMainDisplay();">
+        <img src="/file/${encodeURIComponent(f.path)}" alt="${f.name}" loading="lazy">
+      </div>`;
     } else {
-      return '<div class="thumb-item' + (i === currentIdx ? ' active' : '') + '" onclick="currentIdx=' + i + ';updateMainDisplay();">' +
-        '<video src="/file/' + encodeURIComponent(f.path) + '" preload="metadata"></video>' +
-        '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);font-size:14px;color:white;pointer-events:none;"><i class="fas fa-play"></i></div>' +
-      '</div>';
+      return `<div class="thumb-item${i === currentIdx ? ' active' : ''}" onclick="currentIdx=${i};updateMainDisplay();">
+        <video src="/file/${encodeURIComponent(f.path)}" preload="metadata"></video>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);font-size:14px;color:white;pointer-events:none;"><i class="fa fa-play"></i></div>
+      </div>`;
     }
   }).join('');
+  list.innerHTML = html;
 }
 
 function navFile(dir) {
   if (!files.length) return;
-  currentIdx = (currentIdx + dir + files.length) % files.length;
+  var nextIdx = currentIdx + dir;
+  if (dir === 1 && nextIdx >= files.length) {
+    var nextCh = '{{ next_chapter or "" }}';
+    if (nextCh) {
+      if (confirm('已是最后一张图片，是否前往下一章节「' + nextCh + '？')) {
+        location.href = '/chapter/' + nextCh;
+      }
+    } else {
+      toast('已经是最后一张了', true);
+    }
+    return;
+  }
+  if (dir === -1 && nextIdx < 0) {
+    var prevCh = '{{ prev_chapter or "" }}';
+    if (prevCh) {
+      if (confirm('已是第一张图片，是否前往上一章节「' + prevCh + '？')) {
+        location.href = '/chapter/' + prevCh;
+      }
+    } else {
+      toast('已经是第一张了', true);
+    }
+    return;
+  }
+  currentIdx = nextIdx;
   updateMainDisplay();
 }
 
@@ -823,7 +1828,22 @@ function closeLightbox() {
   if (v) v.pause();
 }
 function navLightbox(dir) {
-  currentIdx = (currentIdx + dir + files.length) % files.length;
+  var nextIdx = currentIdx + dir;
+  if (dir === 1 && nextIdx >= files.length) {
+    var nextCh = '{{ next_chapter or "" }}';
+    if (nextCh) {
+      if (confirm('已是最后一张图片，是否前往下一章节「' + nextCh + '？')) { location.href = '/chapter/' + nextCh; }
+    } else { toast('已经是最后一张了', true); }
+    return;
+  }
+  if (dir === -1 && nextIdx < 0) {
+    var prevCh = '{{ prev_chapter or "" }}';
+    if (prevCh) {
+      if (confirm('已是第一张图片，是否前往上一章节「' + prevCh + '？')) { location.href = '/chapter/' + prevCh; }
+    } else { toast('已经是第一张了', true); }
+    return;
+  }
+  currentIdx = nextIdx;
   updateLightboxContent();
   renderLightboxThumbs();
   updateMainDisplay();
@@ -842,13 +1862,13 @@ function renderLightboxThumbs() {
   container.innerHTML = files.map((f, i) => {
     const active = i === currentIdx ? ' active' : '';
     if (f.type === 'image') {
-      return '<div class="lb-thumb' + active + '" onclick="currentIdx=' + i + ';updateLightboxContent();renderLightboxThumbs();updateMainDisplay();">' +
-        '<img src="/file/' + encodeURIComponent(f.path) + '" loading="lazy">' +
-      '</div>';
+      return `<div class="lb-thumb${active}" onclick="currentIdx=${i};updateLightboxContent();renderLightboxThumbs();updateMainDisplay();">
+        <img src="/file/${encodeURIComponent(f.path)}" loading="lazy">
+      </div>`;
     } else {
-      return '<div class="lb-thumb' + active + '" onclick="currentIdx=' + i + ';updateLightboxContent();renderLightboxThumbs();updateMainDisplay();">' +
-        '<video src="/file/' + encodeURIComponent(f.path) + '" preload="metadata"></video>' +
-      '</div>';
+      return `<div class="lb-thumb${active}" onclick="currentIdx=${i};updateLightboxContent();renderLightboxThumbs();updateMainDisplay();">
+        <video src="/file/${encodeURIComponent(f.path)}" preload="metadata"></video>
+      </div>`;
     }
   }).join('');
 }
@@ -863,7 +1883,7 @@ function openVideoPlayer() {
   player.classList.add('active');
   document.body.style.overflow = 'hidden';
   video.play().then(() => {
-    document.getElementById('vp-play-btn').innerHTML = '<i class="fas fa-pause"></i>';
+    document.getElementById('vp-play-btn').innerHTML = '<i class="fa fa-pause"></i>';
   }).catch(() => {});
 }
 function closeVideoPlayer() {
@@ -874,14 +1894,14 @@ function closeVideoPlayer() {
   player.classList.remove('active');
   document.body.style.overflow = '';
 }
-function togglePlayPause() {
+function toggleVideoPlayPause() {
   const video = document.getElementById('vp-video');
   if (video.paused) {
     video.play();
-    document.getElementById('vp-play-btn').innerHTML = '<i class="fas fa-pause"></i>';
+    document.getElementById('vp-play-btn').innerHTML = '<i class="fa fa-pause"></i>';
   } else {
     video.pause();
-    document.getElementById('vp-play-btn').innerHTML = '<i class="fas fa-play"></i>';
+    document.getElementById('vp-play-btn').innerHTML = '<i class="fa fa-play"></i>';
   }
 }
 function seekVideo(val) {
@@ -903,11 +1923,11 @@ function updateMuteIcon() {
   const video = document.getElementById('vp-video');
   const btn = document.getElementById('vp-mute-btn');
   if (video.muted || video.volume === 0) {
-    btn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+    btn.innerHTML = '<i class="fa fa-volume-mute"></i>';
   } else if (video.volume < 0.5) {
-    btn.innerHTML = '<i class="fas fa-volume-down"></i>';
+    btn.innerHTML = '<i class="fa fa-volume-down"></i>';
   } else {
-    btn.innerHTML = '<i class="fas fa-volume-up"></i>';
+    btn.innerHTML = '<i class="fa fa-volume-up"></i>';
   }
 }
 function toggleFullscreen() {
@@ -946,7 +1966,7 @@ document.addEventListener('keydown', e => {
   // 视频播放器
   if (document.getElementById('video-player').classList.contains('active')) {
     if (e.key === 'Escape') closeVideoPlayer();
-    if (e.key === ' ') { e.preventDefault(); togglePlayPause(); }
+    if (e.key === ' ') { e.preventDefault(); toggleVideoPlayPause(); }
     if (e.key === 'ArrowLeft') {
       const v = document.getElementById('vp-video');
       v.currentTime = Math.max(0, v.currentTime - 5);
@@ -964,10 +1984,58 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// 触摸滑动支持
+let touchStartX = 0;
+let touchEndX = 0;
+document.addEventListener('touchstart', e => {
+  touchStartX = e.changedTouches[0].screenX;
+});
+document.addEventListener('touchend', e => {
+  touchEndX = e.changedTouches[0].screenX;
+  handleSwipe();
+});
+
+function handleSwipe() {
+  const swipeThreshold = 50;
+  if (touchEndX < touchStartX - swipeThreshold) {
+    // 向左滑动
+    if (!editing) {
+      if (document.getElementById('lightbox').classList.contains('active')) {
+        navLightbox(1);
+      } else {
+        navFile(1);
+      }
+    }
+  }
+  if (touchEndX > touchStartX + swipeThreshold) {
+    // 向右滑动
+    if (!editing) {
+      if (document.getElementById('lightbox').classList.contains('active')) {
+        navLightbox(-1);
+      } else {
+        navFile(-1);
+      }
+    }
+  }
+}
+
 // 文件操作
 function showRenameFile(path, name) {
   document.getElementById('rf-old').value = path;
-  document.getElementById('rf-new').value = name;
+  // 分离文件名和后缀
+  const lastDot = name.lastIndexOf('.');
+  if (lastDot > 0) {
+    document.getElementById('rf-new').value = name.substring(0, lastDot);
+    const ext = name.substring(lastDot);
+    document.getElementById('rf-ext').value = ext;
+    document.getElementById('rf-ext-display').textContent = ext;
+    document.getElementById('rf-ext-display').style.display = '';
+  } else {
+    document.getElementById('rf-new').value = name;
+    document.getElementById('rf-ext').value = '';
+    document.getElementById('rf-ext-display').textContent = '';
+    document.getElementById('rf-ext-display').style.display = 'none';
+  }
   document.getElementById('modal-rename-file').classList.add('active');
   setTimeout(() => { const inp = document.getElementById('rf-new'); inp.focus(); inp.select(); }, 100);
 }
@@ -979,8 +2047,11 @@ function confirmDeleteFile(path, name) {
 async function renameFile() {
   const old_path = document.getElementById('rf-old').value;
   const new_name = document.getElementById('rf-new').value.trim();
+  const ext = document.getElementById('rf-ext').value;
   if (!new_name) return;
-  const res = await fetch('/api/file/rename', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ old_path, new_name }) });
+  // 拼接名称和后缀（后缀不可修改）
+  const full_new_name = new_name + ext;
+  const res = await fetch('/api/file/rename', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ old_path, new_name: full_new_name }) });
   const data = await res.json();
   if (data.ok) toast('重命名成功'); else toast(data.error || '失败', true);
   setTimeout(() => location.reload(), 500);
@@ -989,8 +2060,14 @@ async function deleteFile() {
   const path = document.getElementById('df-path').value;
   const res = await fetch('/api/file/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ path }) });
   const data = await res.json();
-  if (data.ok) toast('已删除'); else toast(data.error || '失败', true);
-  setTimeout(() => location.reload(), 500);
+  if (data.ok) {
+    toast('已删除');
+    // 删除成功后，刷新页面并保持在编辑模式
+    localStorage.setItem('keepEditing', 'true');
+    setTimeout(() => location.reload(), 500);
+  } else {
+    toast(data.error || '失败', true);
+  }
 }
 async function uploadFiles(fileList) {
   if (!fileList.length) return;
@@ -1005,16 +2082,179 @@ async function uploadFiles(fileList) {
 
 // 文章编辑
 let editing = false;
+
+// 富文本格式化插入
+function insertFormat(type) {
+  const textarea = document.getElementById('edit-area');
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const selected = textarea.value.substring(start, end);
+  let before = '', after = '', insert = '';
+
+  switch (type) {
+    case 'bold':
+      before = '**'; after = '**';
+      insert = selected || '加粗文本';
+      break;
+    case 'italic':
+      before = '*'; after = '*';
+      insert = selected || '斜体文本';
+      break;
+    case 'strikethrough':
+      before = '~~'; after = '~~';
+      insert = selected || '删除线文本';
+      break;
+    case 'h1':
+      insert = '# ' + (selected || '一级标题');
+      break;
+    case 'h2':
+      insert = '## ' + (selected || '二级标题');
+      break;
+    case 'h3':
+      insert = '### ' + (selected || '三级标题');
+      break;
+    case 'ul':
+      insert = '- ' + (selected || '列表项');
+      break;
+    case 'ol':
+      insert = '1. ' + (selected || '列表项');
+      break;
+    case 'quote':
+      insert = '> ' + (selected || '引用内容');
+      break;
+    case 'hr':
+      insert = '\n---\n';
+      break;
+    case 'link':
+      insert = '[' + (selected || '链接文字') + '](url)';
+      break;
+    case 'image':
+      insert = '![' + (selected || '图片描述') + '](图片路径)';
+      break;
+    case 'code':
+      before = '`'; after = '`';
+      insert = selected || '代码';
+      break;
+    default:
+      return;
+  }
+
+  // 替换选中文本
+  const newContent = textarea.value.substring(0, start) + before + insert + after + textarea.value.substring(end);
+  textarea.value = newContent;
+
+  // 设置光标位置到插入的文本中间
+  let newPos = start + before.length + insert.length;
+  if (!selected && type !== 'hr' && type !== 'h1' && type !== 'h2' && type !== 'h3' && type !== 'ul' && type !== 'ol' && type !== 'quote') {
+    newPos = start + before.length; // 光标在默认文本前，方便用户直接输入
+  }
+  textarea.setSelectionRange(newPos, newPos);
+  textarea.focus();
+}
+
+// 键盘快捷键
+document.getElementById('edit-area').addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+    e.preventDefault();
+    insertFormat('bold');
+  } else if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+    e.preventDefault();
+    insertFormat('italic');
+  }
+});
 function toggleEdit() {
   editing = !editing;
   document.getElementById('article-preview').style.display = editing ? 'none' : 'block';
   document.getElementById('article-edit').style.display = editing ? 'block' : 'none';
-  const text = editing ? '<i class="fas fa-eye"></i> 预览' : '<i class="fas fa-pen"></i> 编辑';
+  const text = editing ? '<i class="fa fa-eye"></i> 预览' : '<i class="fa fa-pencil"></i> 编辑模式';
   const btnEdit = document.getElementById('btn-edit');
   const btnEditInner = document.getElementById('btn-edit-inner');
   if (btnEdit) btnEdit.innerHTML = text;
   if (btnEditInner) btnEditInner.innerHTML = text;
+  // 进入编辑模式时加载作者选择器
+  if (editing) loadEditAuthorSelect();
+  // 显示/隐藏移动文章按钮
+  const btnMoveArticle = document.getElementById('btn-move-article');
+  if (btnMoveArticle) btnMoveArticle.style.display = editing ? '' : 'none';
+  // 重新渲染缩略图和主显示区域，显示/隐藏操作按钮
+  renderThumbnails();
+  updateMainDisplay();
 }
+
+// 切换自定义作者输入框的显示/隐藏
+function toggleCustomAuthor(mode, value) {
+  const customInput = document.getElementById(mode === 'edit' ? 'edit-author-custom' : 'new-article-author-custom');
+  if (value === '__custom__') {
+    customInput.style.display = '';
+    customInput.focus();
+    // 清空之前的选择值
+    const select = document.getElementById(mode === 'edit' ? 'edit-author-select' : 'new-article-author-select');
+    select.value = '';
+  } else {
+    customInput.style.display = 'none';
+    customInput.value = '';
+  }
+}
+
+// 获取当前选择的作者（支持自定义）
+function getSelectedAuthor(mode) {
+  const select = document.getElementById(mode === 'edit' ? 'edit-author-select' : 'new-article-author-select');
+  const customInput = document.getElementById(mode === 'edit' ? 'edit-author-custom' : 'new-article-author-custom');
+  
+  if (!select || !customInput) return '';
+  
+  // 如果选择了"自定义"，取输入框的值
+  if (customInput.style.display !== 'none') {
+    return customInput.value.trim();
+  }
+  return select.value.trim();
+}
+
+async function loadEditAuthorSelect() {
+  const select = document.getElementById('edit-author-select');
+  if (!select) return;
+
+  try {
+    const [usersRes, currentUserRes] = await Promise.all([
+      fetch('/api/user/list'),
+      fetch('/api/user/current')
+    ]);
+    const usersData = await usersRes.json();
+    const currentData = await currentUserRes.json();
+
+    const currentUserId = currentData.ok && currentData.user ? currentData.user.id : null;
+
+    // 获取当前文章的作者
+    let currentAuthor = '';
+    if (currentArticleKey) {
+      const article = allArticles.find(a => a.key === currentArticleKey);
+      if (article) currentAuthor = article.author || '';
+    }
+
+    if (usersData.ok && usersData.users.length > 0) {
+      let html = '<option value="">未选择</option>';
+      usersData.users.forEach(u => {
+        // 优先匹配当前文章作者，其次匹配当前登录用户
+        const isSelected = (currentAuthor && u.name === currentAuthor) || (!currentAuthor && u.id === currentUserId);
+        html += `<option value="${u.name}"${isSelected ? ' selected' : ''}>${u.name}</option>`;
+      });
+      // 检查当前作者是否在用户列表中（可能是自定义名字）
+      const isCustomAuthor = currentAuthor && !usersData.users.some(u => u.name === currentAuthor);
+      html += `<option value="__custom__"${isCustomAuthor ? ' selected' : ''}>✏️ 自定义</option>`;
+      select.innerHTML = html;
+      // 如果是自定义作者，显示输入框并填入值
+      if (isCustomAuthor) {
+        const customInput = document.getElementById('edit-author-custom');
+        if (customInput) { customInput.style.display = ''; customInput.value = currentAuthor; }
+      }
+    } else {
+      select.innerHTML = `<option value="${currentAuthor || ''}">${currentAuthor || '暂无用户'}</option>`;
+    }
+  } catch (e) {
+    select.innerHTML = '<option value="">加载失败</option>';
+  }
+}
+
 function cancelEdit() {
   document.getElementById('edit-area').value = `{{ md_content or '' }}`.replace(/&#39;/g, "'").replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
   toggleEdit();
@@ -1026,11 +2266,387 @@ function startNewArticle() {
 }
 async function saveArticle() {
   const content = document.getElementById('edit-area').value;
-  const res = await fetch('/api/article/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ chapter: '{{ chapter_name }}', content }) });
+  const author = getSelectedAuthor('edit');
+  const res = await fetch('/api/article/save', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      chapter: '{{ chapter_name }}',
+      content,
+      article_key: currentArticleKey,
+      author
+    })
+  });
   const data = await res.json();
-  if (data.ok) toast('保存成功'); else toast(data.error || '失败', true);
-  setTimeout(() => location.reload(), 500);
+  if (data.ok) {
+    toast('保存成功');
+    // 先更新预览内容，再切换到预览模式
+    document.getElementById('article-preview').innerHTML = simple_markdown(content);
+    // 更新作者显示和文章列表中的作者信息
+    if (currentArticleKey) {
+      const article = allArticles.find(a => a.key === currentArticleKey);
+      if (article) { article.author = author; updateAuthorDisplay(author); }
+    }
+    if (editing) toggleEdit();
+  } else {
+    toast(data.error || '失败', true);
+  }
 }
+
+// ============ 多文章管理 ============
+let currentArticleKey = '';
+let allArticles = [];
+
+async function loadArticleList() {
+  try {
+    const res = await fetch(`/api/articles/list?chapter={{ chapter_name }}`);
+    const data = await res.json();
+    if (data.ok) {
+      allArticles = data.articles;
+      renderArticleSelect();
+      if (allArticles.length > 0 && !currentArticleKey) {
+        currentArticleKey = allArticles[0].key;
+        switchArticle(currentArticleKey);
+      }
+    }
+  } catch (e) { console.error('加载文章列表失败:', e); }
+}
+
+function renderArticleSelect() {
+  const select = document.getElementById('article-select');
+  if (!select) return;
+  
+  select.innerHTML = allArticles.map(a => {
+    const authorText = a.author ? `    👤 ${a.author}` : '';
+    return `<option value="${a.key}" ${a.key === currentArticleKey ? 'selected' : ''}>${a.title}${authorText}</option>`;
+  }).join('');
+  
+  const badge = document.getElementById('article-count-badge');
+  if (badge) badge.textContent = allArticles.length + '篇';
+}
+
+async function switchArticle(key) {
+  if (!key) return;
+  currentArticleKey = key;
+  
+  const article = allArticles.find(a => a.key === key);
+  if (article) {
+    updateAuthorDisplay(article.author);
+    
+    // 加载文章内容
+    const res = await fetch(`/api/articles/get?chapter={{ chapter_name }}&key=${key}`);
+    const data = await res.json();
+    if (data.ok && data.content !== undefined) {
+      document.getElementById('article-preview').innerHTML = simple_markdown(data.content);
+      document.getElementById('edit-area').value = data.content;
+      
+      // 显示编辑按钮
+      const btnEditInner = document.getElementById('btn-edit-inner');
+      if (btnEditInner) btnEditInner.style.display = '';
+    }
+  }
+  
+  // 如果在编辑模式，退出编辑模式
+  if (editing) toggleEdit();
+  
+  renderArticleSelect();
+}
+
+function updateAuthorDisplay(author) {
+  const tag = document.getElementById('article-author-tag');
+  const nameSpan = document.getElementById('current-author-name');
+  if (!tag || !nameSpan) return;
+  
+  if (author) {
+    tag.style.display = '';
+    nameSpan.textContent = author;
+  } else {
+    tag.style.display = 'none';
+  }
+}
+
+function showCreateArticleModal() {
+  document.getElementById('new-article-title').value = '';
+  loadAuthorSelect();
+  document.getElementById('modal-create-article').classList.add('active');
+  setTimeout(() => document.getElementById('new-article-title').focus(), 100);
+}
+
+async function loadAuthorSelect() {
+  const select = document.getElementById('new-article-author-select');
+  if (!select) return;
+  
+  try {
+    const [usersRes, currentUserRes] = await Promise.all([
+      fetch('/api/user/list'),
+      fetch('/api/user/current')
+    ]);
+    const usersData = await usersRes.json();
+    const currentData = await currentUserRes.json();
+    
+    const currentUserId = currentData.ok && currentData.user ? currentData.user.id : null;
+    
+    if (usersData.ok && usersData.users.length > 0) {
+      let html = '';
+      usersData.users.forEach(u => {
+        const selected = u.id === currentUserId ? ' selected' : '';
+        html += `<option value="${u.name}" data-id="${u.id}"${selected}>${u.name}</option>`;
+      });
+      
+      // 如果没有当前用户匹配，添加一个"未选择"选项
+      if (!currentUserId) {
+        html = '<option value="" data-id="">未选择</option>' + html;
+      }
+      
+      // 添加自定义选项
+      html += '<option value="__custom__" data-id="">✏️ 自定义</option>';
+      
+      select.innerHTML = html;
+    } else {
+      select.innerHTML = '<option value="" data-id="">暂无用户</option>';
+    }
+  } catch (e) {
+    select.innerHTML = '<option value="" data-id="">加载失败</option>';
+  }
+}
+
+async function createNewArticle() {
+  const title = document.getElementById('new-article-title').value.trim();
+  const author = getSelectedAuthor('new');
+  
+  if (!title) {
+    toast('请输入文章标题', true);
+    return;
+  }
+  
+  const res = await fetch('/api/articles/create', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ chapter: '{{ chapter_name }}', title, author })
+  });
+  const data = await res.json();
+  
+  if (data.ok) {
+    document.getElementById('modal-create-article').classList.remove('active');
+    currentArticleKey = data.key;
+    await loadArticleList();
+    switchArticle(data.key);
+    toast('文章创建成功：' + title);
+  } else {
+    toast(data.error || '创建失败', true);
+  }
+}
+
+function confirmDeleteArticle(key, title) {
+  document.getElementById('delete-article-title').textContent = title;
+  document.getElementById('delete-article-key').value = key;
+  document.getElementById('modal-delete-article').classList.add('active');
+}
+
+async function deleteArticleAction() {
+  const key = document.getElementById('delete-article-key').value;
+  const res = await fetch('/api/articles/delete', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ chapter: '{{ chapter_name }}', key })
+  });
+  const data = await res.json();
+  
+  if (data.ok) {
+    document.getElementById('modal-delete-article').classList.remove('active');
+    currentArticleKey = '';
+    await loadArticleList();
+    toast('文章已删除');
+  } else {
+    toast(data.error || '删除失败', true);
+  }
+}
+
+function deleteCurrentArticle() {
+  if (!currentArticleKey) { toast('请先选择一篇文章', true); return; }
+  const article = allArticles.find(a => a.key === currentArticleKey);
+  if (article) confirmDeleteArticle(currentArticleKey, article.title);
+}
+
+function showRenameArticleModal() {
+  if (!currentArticleKey) { toast('请先选择一篇文章', true); return; }
+  const article = allArticles.find(a => a.key === currentArticleKey);
+  if (!article) return;
+  document.getElementById('rename-article-title').value = article.title;
+  document.getElementById('rename-article-key').value = currentArticleKey;
+  document.getElementById('modal-rename-article').classList.add('active');
+  setTimeout(() => {
+    const inp = document.getElementById('rename-article-title');
+    inp.focus();
+    inp.select();
+  }, 100);
+}
+
+async function renameArticleAction() {
+  const key = document.getElementById('rename-article-key').value;
+  const newTitle = document.getElementById('rename-article-title').value.trim();
+  
+  if (!newTitle) { toast('请输入新标题', true); return; }
+  
+  const res = await fetch('/api/articles/rename', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ chapter: '{{ chapter_name }}', key, title: newTitle })
+  });
+  const data = await res.json();
+  
+  if (data.ok) {
+    document.getElementById('modal-rename-article').classList.remove('active');
+    // 更新本地数据
+    const article = allArticles.find(a => a.key === key);
+    if (article) article.title = newTitle;
+    renderArticleSelect();
+    toast('重命名成功');
+  } else if (data.error) {
+    // 重复文件名等特殊错误，不关闭弹窗，让用户修改
+    toast(data.error, true);
+  } else {
+    toast(data.error || '重命名失败', true);
+  }
+}
+
+/* ========== 移动到其他章节 ========== */
+let selectedTargetChapter = '';
+
+function showMoveFileModal(path, name) {
+  document.getElementById('move-modal-title').textContent = '移动文件到其他章节';
+  document.getElementById('move-item-name').textContent = name;
+  document.getElementById('move-item-type').value = 'file';
+  document.getElementById('move-item-path').value = path;
+  document.getElementById('move-article-key').value = '';
+  selectedTargetChapter = '';
+  loadChapterListForMove();
+  document.getElementById('modal-move-to-chapter').classList.add('active');
+}
+
+function showMoveArticleModal() {
+  if (!currentArticleKey) { toast('请先选择一篇文章', true); return; }
+  const article = allArticles.find(a => a.key === currentArticleKey);
+  if (!article) return;
+  document.getElementById('move-modal-title').textContent = '移动文章到其他章节';
+  document.getElementById('move-item-name').textContent = article.title || currentArticleKey;
+  document.getElementById('move-item-type').value = 'article';
+  document.getElementById('move-item-path').value = '';
+  document.getElementById('move-article-key').value = currentArticleKey;
+  selectedTargetChapter = '';
+  loadChapterListForMove();
+  document.getElementById('modal-move-to-chapter').classList.add('active');
+}
+
+async function loadChapterListForMove() {
+  const container = document.getElementById('move-chapter-list');
+  container.innerHTML = '<div style="padding:16px; text-align:center; color:#bbb;"><i class="fa fa-spinner fa-spin" style="font-size:18px;"></i></div>';
+  try {
+    const res = await fetch('/');
+    const htmlText = await res.text();
+    // 从首页HTML中提取章节名（简单解析）
+    const chapterMatches = htmlText.match(/data-year="[^"]*"[^>]*onclick="location\.href='\/chapter\/([^']+)'/g);
+    const chapters = [];
+    const seen = new Set();
+    if (chapterMatches) {
+      for (const m of chapterMatches) {
+        const match = m.match(/location\.href='\/chapter\/([^']+)'/);
+        if (match && !seen.has(match[1]) && match[1] !== CHAPTER_NAME) {
+          chapters.push(match[1]);
+          seen.add(match[1]);
+        }
+      }
+    }
+    if (!chapters.length) {
+      container.innerHTML = '<div style="padding:16px; text-align:center; color:#bbb; font-size:13px;">没有可用的目标章节</div>';
+      return;
+    }
+    container.innerHTML = chapters.map(ch => `
+      <div class="music-list-item${selectedTargetChapter === ch ? ' selected' : ''}" onclick="selectTargetChapter('${ch}')">
+        <i class="fa fa-folder-o" style="color:#D4A574; font-size:13px; width:16px;"></i>
+        <span class="music-item-name">${ch}</span>
+      </div>
+    `).join('');
+  } catch(e) {
+    container.innerHTML = '<div style="padding:16px; text-align:center; color:#dc2626; font-size:13px;">加载失败</div>';
+  }
+}
+
+function selectTargetChapter(name) {
+  selectedTargetChapter = name;
+  // 更新选中状态
+  document.querySelectorAll('#move-chapter-list .music-list-item').forEach(el => {
+    el.classList.toggle('selected', el.textContent.trim() === name);
+  });
+}
+
+async function confirmMoveToChapter() {
+  if (!selectedTargetChapter) { toast('请选择目标章节', true); return; }
+  
+  const itemType = document.getElementById('move-item-type').value;
+  
+  if (itemType === 'file') {
+    const path = document.getElementById('move-item-path').value;
+    const res = await fetch('/api/file/move', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ path, target_chapter: selectedTargetChapter })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('modal-move-to-chapter').classList.remove('active');
+      toast(`已移动到「${selectedTargetChapter}」`);
+      localStorage.setItem('keepEditing', 'true');
+      setTimeout(() => location.reload(), 800);
+    } else {
+      toast(data.error || '移动失败', true);
+    }
+  } else if (itemType === 'article') {
+    const key = document.getElementById('move-article-key').value;
+    const res = await fetch('/api/articles/move', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ chapter: CHAPTER_NAME, key, target_chapter: selectedTargetChapter })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('modal-move-to-chapter').classList.remove('active');
+      toast(`文章已移动到「${selectedTargetChapter}」`);
+      currentArticleKey = '';
+      await loadArticleList();
+      if (allArticles.length > 0) {
+        currentArticleKey = allArticles[0].key;
+        switchArticle(currentArticleKey);
+      } else {
+        document.getElementById('article-preview').innerHTML = '<div style="text-align:center;padding:40px;color:#c4a0b0;"><p>暂无文章</p><p style="font-size:12px;margin-top:4px;">点击"新建"开始书写</p></div>';
+        document.getElementById('edit-area').value = '';
+      }
+      renderArticleSelect();
+    } else {
+      toast(data.error || '移动失败', true);
+    }
+  }
+}
+
+// 简单的 Markdown 转 HTML（前端版本，用于动态切换文章）
+function simple_markdown(text) {
+  if (!text) return '';
+  let html = text;
+  html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+  html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+  html = html.replace(/^---$/gm, '<hr>');
+  html = html.replace(/\n/g, '<br>');
+  return html;
+}
+
 
 // Toast
 function toast(msg, err) {
@@ -1041,11 +2657,33 @@ function toast(msg, err) {
   setTimeout(() => t.style.opacity = '0', 2500);
 }
 
+// 保存最后访问的章节到服务器（用户系统）
+async function saveUserLastChapter(chapterName, scrollPosition) {
+  try {
+    await fetch('/api/user/last-chapter', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ chapter_name: chapterName, scroll_position: scrollPosition })
+    });
+  } catch (e) {
+    if (e.name !== 'AbortError') console.error('保存浏览记录失败:', e);
+  }
+}
+
 // 保存最后访问的章节
+saveUserLastChapter('{{ chapter_name }}', window.scrollY || 0);
+// 兼容本地存储
 localStorage.setItem('lastChapter', '{{ chapter_name }}');
 
 // 初始化
+const keepEditing = localStorage.getItem('keepEditing') === 'true';
+if (keepEditing) {
+  localStorage.removeItem('keepEditing');
+  toggleEdit();
+}
 initGallery();
+loadArticleList();
+initMusicForChapter();
 </script>
 </body>
 </html>
