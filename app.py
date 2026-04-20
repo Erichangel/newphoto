@@ -722,6 +722,11 @@ def api_delete_user():
 
 # ============ API ============
 
+@app.route('/api/chapters', methods=['GET'])
+def api_chapters():
+    chapters = get_chapters()
+    return jsonify({'ok': True, 'chapters': [c['name'] for c in chapters]})
+
 @app.route('/api/chapter/rename', methods=['POST'])
 def api_rename_chapter():
     """重命名章节文件夹"""

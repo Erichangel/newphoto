@@ -2614,21 +2614,13 @@ async function loadChapterListForMove() {
   const container = document.getElementById('move-chapter-list');
   container.innerHTML = '<div style="padding:16px; text-align:center; color:#bbb;"><i class="fa fa-spinner fa-spin" style="font-size:18px;"></i></div>';
   try {
-    const res = await fetch('/');
-    const htmlText = await res.text();
-    // 从首页HTML中提取章节名（简单解析）
-    const chapterMatches = htmlText.match(/data-year="[^"]*"[^>]*onclick="location\.href='\/chapter\/([^']+)'/g);
-    const chapters = [];
-    const seen = new Set();
-    if (chapterMatches) {
-      for (const m of chapterMatches) {
-        const match = m.match(/location\.href='\/chapter\/([^']+)'/);
-        if (match && !seen.has(match[1]) && match[1] !== CHAPTER_NAME) {
-          chapters.push(match[1]);
-          seen.add(match[1]);
-        }
-      }
+    const res = await fetch('/api/chapters');
+    const data = await res.json();
+    if (!data.ok) {
+      container.innerHTML = '<div style="padding:16px; text-align:center; color:#dc2626; font-size:13px;">加载失败</div>';
+      return;
     }
+    const chapters = data.chapters.filter(ch => ch !== CHAPTER_NAME);
     if (!chapters.length) {
       container.innerHTML = '<div style="padding:16px; text-align:center; color:#bbb; font-size:13px;">没有可用的目标章节</div>';
       return;
