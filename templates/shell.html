@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>时光印记</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; }
+
+    #content-frame {
+      width: 100%;
+      height: calc(100% - 60px);
+      border: none;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    /* ========== 音乐播放器 ========== */
+    .music-player {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 180;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(233, 30, 99, 0.15);
+      padding: 8px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 -4px 24px rgba(233, 30, 99, 0.12);
+      transition: transform 0.3s ease;
+      height: 52px;
+    }
+    .music-player.hidden { display: none !important; }
+    .music-player.collapsed { transform: translateY(calc(100% - 36px)); }
+    .music-player.collapsed:hover { transform: translateY(0); }
+    .music-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(135deg, #E91E63, #FF6090);
+      color: white; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; flex-shrink: 0; transition: transform 0.2s;
+    }
+    .music-icon:hover { transform: scale(1.1); }
+    .music-info { flex: 1; min-width: 0; overflow: hidden; }
+    .music-name {
+      font-size: 12px; color: #C2185B; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .music-controls { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    .music-btn {
+      width: 30px; height: 30px; border-radius: 50%; border: none;
+      background: transparent; color: #C2185B; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; transition: all 0.2s ease;
+    }
+    .music-btn:hover { background: rgba(233, 30, 99, 0.08); }
+    .music-btn.play-btn {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, #E91E63, #FF6090);
+      color: white;
+    }
+    .music-btn.play-btn:hover { transform: scale(1.05); }
+    .music-volume {
+      width: 50px; height: 4px; appearance: none; -webkit-appearance: none;
+      background: rgba(233, 30, 99, 0.15); border-radius: 2px; outline: none; cursor: pointer;
+    }
+    .music-volume::-webkit-slider-thumb {
+      appearance: none; -webkit-appearance: none;
+      width: 12px; height: 12px; border-radius: 50%; background: #E91E63; cursor: pointer;
+    }
+    .music-close-btn {
+      width: 26px; height: 26px; border-radius: 50%; border: none;
+      background: rgba(220, 38, 38, 0.08); color: #dc2626; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; flex-shrink: 0; transition: all 0.2s;
+    }
+    .music-close-btn:hover { background: #dc2626; color: white; }
+
+    /* 音乐设置弹窗 */
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4); z-index: 1000;
+      justify-content: center; align-items: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+      background: white; border-radius: 16px; padding: 24px;
+      max-width: 480px; width: 90%; max-height: 85vh; overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    }
+    .modal-box h3 { margin-bottom: 16px; font-size: 16px; color: #333; }
+    .modal-box label { display: block; font-size: 13px; color: #555; margin-bottom: 6px; font-weight: 500; }
+    .modal-hint { font-size: 11px; color: #aaa; margin-top: 6px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+    .modal-btn { padding: 8px 20px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+    .modal-btn-cancel { background: #f5f5f5; color: #666; }
+    .modal-btn-confirm { background: linear-gradient(135deg, #E91E63, #FF6090); color: white; }
+    .music-settings-content { max-height: 350px; overflow-y: auto; }
+    .music-list-item {
+      display: flex; align-items: center; padding: 8px 12px;
+      border-radius: 8px; cursor: pointer; transition: background 0.15s; gap: 8px;
+    }
+    .music-list-item:hover { background: rgba(233, 30, 99, 0.06); }
+    .music-list-item.selected { background: rgba(233, 30, 99, 0.1); }
+    .music-list-item .music-item-name { flex: 1; font-size: 13px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .music-list-item .music-item-size { font-size: 11px; color: #999; }
+
+    /* 章节音乐选择 */
+    .chapter-music-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .chapter-music-row select {
+      flex: 1; padding: 6px 10px; border-radius: 8px;
+      border: 1.5px solid rgba(233,30,99,0.2); font-size: 13px;
+      color: #C2185B; outline: none;
+    }
+    .chapter-music-row button {
+      padding: 6px 14px; border-radius: 8px; border: none;
+      background: linear-gradient(135deg, #E91E63, #FF6090);
+      color: white; font-size: 12px; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <!-- 内容 iframe -->
+  <iframe id="content-frame" src="/home" allow="autoplay"></iframe>
+
+  <!-- 音乐播放器（永不刷新） -->
+  <audio id="bgm-audio" preload="auto" loop></audio>
+  <div id="music-player" class="music-player">
+    <button class="music-icon" onclick="toggleMusicPlayer()" title="展开/收起"><i class="fa fa-music"></i></button>
+    <div class="music-info">
+      <div class="music-name" id="music-name">未播放</div>
+    </div>
+    <div class="music-controls">
+      <button class="music-btn" onclick="playPrevMusic()" title="上一首"><i class="fa fa-step-backward"></i></button>
+      <button class="music-btn play-btn" onclick="togglePlayPause()" id="music-play-btn" title="播放/暂停"><i class="fa fa-play"></i></button>
+      <button class="music-btn" onclick="playNextMusic()" title="下一首（随机）"><i class="fa fa-step-forward"></i></button>
+      <input type="range" class="music-volume" id="music-volume" min="0" max="100" value="50" oninput="changeMusicVolume(this.value)" title="音量">
+      <button class="music-btn" onclick="showMusicSettings()" title="音乐设置"><i class="fa fa-cog"></i></button>
+      <button class="music-close-btn" onclick="closeMusicPlayer()" title="关闭播放器"><i class="fa fa-times"></i></button>
+    </div>
+  </div>
+
+  <!-- 音乐设置弹窗 -->
+  <div id="modal-music-settings" class="modal-overlay" onclick="if(event.target===this)closeModals()">
+    <div class="modal-box" style="max-width:480px;">
+      <h3><i class="fa fa-music" style="color: #E91E63; margin-right: 6px;"></i>音乐设置</h3>
+      <label>切换章节时自动换歌</label>
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+        <label style="display:flex; align-items:center; cursor:pointer; font-size:13px; color:#555;">
+          <input type="checkbox" id="music-auto-switch" onchange="saveMusicSettings()" checked style="margin-right:6px; accent-color:#E91E63;">
+          自动切换
+        </label>
+        <span style="font-size:11px; color:#aaa;">开启后，进入或切换章节时自动更换背景音乐</span>
+      </div>
+      <label>进入页面自动播放</label>
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+        <label style="display:flex; align-items:center; cursor:pointer; font-size:13px; color:#555;">
+          <input type="checkbox" id="music-auto-play" onchange="saveMusicSettings()" checked style="margin-right:6px; accent-color:#E91E63;">
+          自动播放
+        </label>
+        <span style="font-size:11px; color:#aaa;">开启后，进入页面自动开始播放音乐</span>
+      </div>
+      <label>当前章节指定音乐</label>
+      <div id="chapter-music-select-area" style="margin-bottom:4px;">
+        <div class="chapter-music-row">
+          <select id="chapter-music-select"><option value="">随机播放</option></select>
+          <button onclick="saveChapterMusic()">保存</button>
+        </div>
+        <span id="chapter-music-status" style="font-size:11px; color:#aaa;"></span>
+      </div>
+      <label>可用音乐列表</label>
+      <div class="music-settings-content" id="music-list-container" style="border:1.5px solid rgba(233,30,99,0.15); border-radius:10px; max-height:200px; overflow-y:auto; margin-bottom:6px;">
+        <div style="padding:20px; text-align:center; color:#bbb; font-size:13px;">加载中...</div>
+      </div>
+      <p class="modal-hint">将音乐文件放入 <span id="music-dir-hint" style="color:#C2185B;">K:\Pictures\音乐</span> 文件夹即可使用</p>
+      <div class="modal-actions">
+        <button onclick="closeModals()" class="modal-btn modal-btn-cancel">关闭</button>
+        <button onclick="loadMusicList()" class="modal-btn modal-btn-confirm">刷新列表</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ========== Shell 音乐播放器系统 ========== */
+var allMusicList = [];
+var currentMusicName = '';
+var isMusicPlaying = false;
+var musicErrorCount = 0;
+var musicErrorTimer = null;
+var musicPlayLock = false;
+var autoSwitch = true;
+var autoPlay = true;
+var currentChapter = '';
+
+var bgmAudio = document.getElementById('bgm-audio');
+var contentFrame = document.getElementById('content-frame');
+
+bgmAudio.addEventListener('ended', function() {
+  musicErrorCount = 0;
+  if (!bgmAudio.loop) { playNextMusic(); }
+});
+bgmAudio.addEventListener('error', function() {
+  var code = bgmAudio.error ? bgmAudio.error.code : 0;
+  console.warn('音乐加载失败:', currentMusicName || bgmAudio.src, 'code=' + code);
+  isMusicPlaying = false;
+  musicErrorCount++;
+  if (musicErrorCount > 5) {
+    bgmAudio.removeAttribute('src');
+    bgmAudio.load();
+    currentMusicName = '';
+    updateMusicUI();
+    return;
+  }
+  if (currentMusicName && code === 4) {
+    allMusicList = allMusicList.filter(function(m) { return m.name !== currentMusicName; });
+    currentMusicName = '';
+  }
+  updateMusicUI();
+  renderMusicList();
+  clearTimeout(musicErrorTimer);
+  musicErrorTimer = setTimeout(function() {
+    if (allMusicList.length > 0) playNextMusic();
+  }, 500);
+});
+
+async function loadMusicList() {
+  try {
+    var res = await fetch('/api/music/list');
+    var data = await res.json();
+    if (data.ok) {
+      allMusicList = data.musics;
+      renderMusicList();
+      renderChapterMusicSelect();
+      document.getElementById('music-dir-hint').textContent = data.music_dir || 'K:\\Pictures\\音乐';
+    }
+  } catch (e) { console.error('加载音乐列表失败:', e); }
+}
+
+function renderMusicList() {
+  var container = document.getElementById('music-list-container');
+  if (!allMusicList.length) {
+    container.innerHTML = '<div style="padding:20px; text-align:center; color:#bbb; font-size:13px;"><i class="fa fa-music" style="display:block; font-size:24px; margin-bottom:6px; opacity:0.4;"></i>暂无音乐文件<br><span style="font-size:11px;">请将音频文件放入音乐文件夹</span></div>';
+    return;
+  }
+  container.innerHTML = allMusicList.map(function(m) {
+    return '<div class="music-list-item' + (m.name === currentMusicName ? ' selected' : '') + '" onclick="playSpecificMusic(\'' + m.name + '\')">' +
+      '<i class="fa fa-music" style="color:#E91E63; font-size:12px; width:16px; text-align:center;"></i>' +
+      '<span class="music-item-name">' + m.name + '</span>' +
+      '<span class="music-item-size">' + m.size_display + '</span>' +
+      (m.name === currentMusicName ? '<i class="fa fa-volume-up" style="color:#E91E63; font-size:11px;"></i>' : '') +
+    '</div>';
+  }).join('');
+}
+
+function renderChapterMusicSelect() {
+  var select = document.getElementById('chapter-music-select');
+  if (!select) return;
+  var html = '<option value="">随机播放</option>';
+  allMusicList.forEach(function(m) { html += '<option value="' + m.name + '">' + m.name + '</option>'; });
+  select.innerHTML = html;
+  if (currentChapter) {
+    fetch('/api/chapter/music?chapter=' + encodeURIComponent(currentChapter))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.ok && data.music) {
+          select.value = data.music;
+          document.getElementById('chapter-music-status').textContent = '已设置';
+        } else {
+          document.getElementById('chapter-music-status').textContent = '';
+        }
+      }).catch(function(){});
+  }
+}
+
+function playSpecificMusic(name, shouldPlay) {
+  if (!name) return;
+  if (shouldPlay === undefined) shouldPlay = true;
+  if (currentMusicName === name && shouldPlay) {
+    if (bgmAudio.paused) {
+      bgmAudio.play().catch(function(){});
+      isMusicPlaying = true;
+      updateMusicUI();
+    }
+    return;
+  }
+  if (musicPlayLock) { bgmAudio.pause(); }
+  musicPlayLock = true;
+  currentMusicName = name;
+  bgmAudio.src = '/api/music/serve?f=' + encodeURIComponent(name);
+  bgmAudio.volume = parseInt(document.getElementById('music-volume').value) / 100;
+  showMusicPlayer();
+  renderMusicList();
+  if (!shouldPlay) {
+    musicPlayLock = false;
+    isMusicPlaying = false;
+    updateMusicUI();
+    return;
+  }
+  var playPromise = bgmAudio.play();
+  if (playPromise !== undefined) {
+    playPromise.then(function() {
+      musicPlayLock = false;
+      isMusicPlaying = true;
+      musicErrorCount = 0;
+      updateMusicUI();
+      showMusicPlayer();
+      renderMusicList();
+    }).catch(function(e) {
+      musicPlayLock = false;
+      if (e.name === 'AbortError') return;
+      if (e.name === 'NotAllowedError') {
+        isMusicPlaying = false;
+        updateMusicUI();
+        return;
+      }
+      isMusicPlaying = false;
+      updateMusicUI();
+    });
+  } else {
+    musicPlayLock = false;
+  }
+}
+
+function playRandomMusic(shouldPlay) {
+  if (!allMusicList.length) return;
+  var idx = Math.floor(Math.random() * allMusicList.length);
+  playSpecificMusic(allMusicList[idx].name, shouldPlay);
+}
+
+function playPrevMusic() { playRandomMusic(); }
+function playNextMusic() { playRandomMusic(); }
+
+function togglePlayPause() {
+  if (bgmAudio.error) {
+    bgmAudio.removeAttribute('src');
+    bgmAudio.load();
+    currentMusicName = '';
+    isMusicPlaying = false;
+    musicErrorCount = 0;
+    musicPlayLock = false;
+    updateMusicUI();
+    if (allMusicList.length > 0) { playNextMusic(); return; }
+    return;
+  }
+  if (!bgmAudio.src && allMusicList.length > 0) { musicErrorCount = 0; playRandomMusic(); return; }
+  if (isMusicPlaying || musicPlayLock) {
+    bgmAudio.pause();
+    isMusicPlaying = false;
+    musicPlayLock = false;
+    updateMusicUI();
+  } else {
+    musicErrorCount = 0;
+    isMusicPlaying = true;
+    updateMusicUI();
+    bgmAudio.play().catch(function(e) {
+      isMusicPlaying = false;
+      musicPlayLock = false;
+      updateMusicUI();
+      if (e.name === 'AbortError') return;
+      if (e.name === 'NotAllowedError') return;
+    });
+  }
+}
+
+function updateMusicUI() {
+  var btn = document.getElementById('music-play-btn');
+  btn.innerHTML = isMusicPlaying ? '<i class="fa fa-pause"></i>' : '<i class="fa fa-play"></i>';
+  document.getElementById('music-name').textContent = currentMusicName || '未播放';
+}
+
+function changeMusicVolume(val) {
+  bgmAudio.volume = val / 100;
+  localStorage.setItem('musicVolume', val);
+}
+
+function showMusicPlayer() {
+  document.getElementById('music-player').classList.remove('hidden', 'collapsed');
+}
+function closeMusicPlayer() {
+  document.getElementById('music-player').classList.add('hidden');
+  document.getElementById('music-player').classList.remove('collapsed');
+}
+function toggleMusicPlayer() {
+  var player = document.getElementById('music-player');
+  if (player.classList.contains('hidden')) { showMusicPlayer(); }
+  else { closeMusicPlayer(); }
+}
+
+function closeModals() {
+  document.getElementById('modal-music-settings').classList.remove('active');
+}
+
+async function showMusicSettings() {
+  loadMusicList();
+  try {
+    var res = await fetch('/api/music/settings');
+    var data = await res.json();
+    if (data.ok) {
+      autoSwitch = data.settings.auto_switch !== false;
+      autoPlay = data.settings.auto_play !== false;
+      document.getElementById('music-auto-switch').checked = autoSwitch;
+      document.getElementById('music-auto-play').checked = autoPlay;
+    }
+  } catch (e) {}
+  document.getElementById('modal-music-settings').classList.add('active');
+}
+
+async function saveMusicSettings() {
+  autoSwitch = document.getElementById('music-auto-switch').checked;
+  autoPlay = document.getElementById('music-auto-play').checked;
+  try {
+    await fetch('/api/music/settings', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ settings: { auto_switch: autoSwitch, auto_play: autoPlay } })
+    });
+  } catch (e) {}
+}
+
+function saveChapterMusic() {
+  var music = document.getElementById('chapter-music-select').value;
+  if (!currentChapter) return;
+  fetch('/api/chapter/music', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ chapter: currentChapter, music: music || null })
+  }).then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok) {
+        document.getElementById('chapter-music-status').textContent = music ? '已设置 ✓' : '随机播放';
+        if (music) playSpecificMusic(music, true);
+      }
+    }).catch(function(){});
+}
+
+/* ========== iframe 导航控制 ========== */
+function navigateTo(url) {
+  contentFrame.src = url;
+}
+
+// 监听 iframe 中页面的消息
+window.addEventListener('message', function(e) {
+  var msg = e.data;
+  if (!msg || !msg.type) return;
+
+  switch(msg.type) {
+    case 'navigate':
+      navigateTo(msg.url);
+      break;
+    case 'chapter-loaded':
+      currentChapter = msg.chapter || '';
+      handleChapterChange(currentChapter);
+      break;
+    case 'home-loaded':
+      currentChapter = '';
+      break;
+    case 'toggle-music':
+      togglePlayPause();
+      break;
+    case 'show-music-settings':
+      showMusicSettings();
+      break;
+    case 'music-cmd':
+      switch(msg.cmd) {
+        case 'play-specific': playSpecificMusic(msg.name, msg.shouldPlay); break;
+        case 'play-random': playRandomMusic(msg.shouldPlay); break;
+        case 'prev': playPrevMusic(); break;
+        case 'next': playNextMusic(); break;
+        case 'toggle-play': togglePlayPause(); break;
+        case 'volume': changeMusicVolume(msg.value); break;
+      }
+      break;
+  }
+});
+
+// 章节切换时的音乐处理
+function handleChapterChange(chapter) {
+  if (!autoSwitch || !allMusicList.length) return;
+  fetch('/api/chapter/music?chapter=' + encodeURIComponent(chapter))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok && data.music) {
+        if (currentMusicName !== data.music) {
+          playSpecificMusic(data.music, autoPlay);
+        }
+      } else if (autoPlay) {
+        playRandomMusic(true);
+      }
+    }).catch(function() {
+      if (autoPlay) playRandomMusic(true);
+    });
+}
+
+/* ========== 初始化 ========== */
+async function init() {
+  var savedVolume = localStorage.getItem('musicVolume');
+  if (savedVolume) {
+    document.getElementById('music-volume').value = savedVolume;
+    bgmAudio.volume = savedVolume / 100;
+  } else {
+    bgmAudio.volume = 0.5;
+  }
+  await loadMusicList();
+  showMusicPlayer();
+  updateMusicUI();
+  if (allMusicList.length === 0) return;
+
+  try {
+    var res = await fetch('/api/music/settings');
+    var data = await res.json();
+    autoPlay = data.ok && data.settings.auto_play !== false;
+    autoSwitch = data.ok && data.settings.auto_switch !== false;
+    if (data.ok) {
+      document.getElementById('music-auto-switch').checked = autoSwitch;
+      document.getElementById('music-auto-play').checked = autoPlay;
+    }
+  } catch(e) {}
+
+  if (autoPlay) { playRandomMusic(true); }
+}
+
+init();
+</script>
+</body>
+</html>

@@ -943,7 +943,7 @@
     <div class="timeline-line"></div>
 
     {% for ch in chapters %}
-    <div class="timeline-node" data-year="{{ ch.year }}" onclick="location.href='/chapter/{{ ch.name }}'">
+    <div class="timeline-node" data-year="{{ ch.year }}" onclick="shellNav('/chapter/{{ ch.name }}')">
       <!-- 悬停操作 -->
       <div class="node-actions" onclick="event.stopPropagation()">
         <button class="node-action-btn rename-btn" onclick="showRenameChapter('{{ ch.name }}')" title="重命名">
@@ -1067,6 +1067,7 @@
   <!-- Toast -->
   <div id="toast"></div>
 
+  {% if not is_iframe %}
   <!-- 全局音乐播放器 -->
   <audio id="bgm-audio" preload="auto" loop></audio>
   <div id="music-player" class="music-player">
@@ -1119,49 +1120,64 @@
       </div>
     </div>
   </div>
+  {% endif %}
 
   <script>
+    /* ========== iframe 通信 ========== */
+    var isInIframe = window.parent !== window;
+    var isIframeMode = {{ 'true' if is_iframe else 'false' }};
+    function shellNav(url) {
+      if (isInIframe) { parent.postMessage({ type: 'navigate', url: url }, '*'); }
+      else { location.href = url; }
+    }
+    function shellMsg(msg) {
+      if (isInIframe) { parent.postMessage(msg, '*'); }
+    }
+    if (isInIframe) shellMsg({ type: 'home-loaded' });
+
     /* ========== 背景音乐系统 ========== */
-    let allMusicList = [];
-    let currentMusicName = '';
-    let isMusicPlaying = false;
-    let musicPlayerCollapsed = false;
-    let musicErrorCount = 0;
-    let musicErrorTimer = null;
-    let musicPlayLock = false;
+    var allMusicList = [];
+    var currentMusicName = '';
+    var isMusicPlaying = false;
+    var musicPlayerCollapsed = false;
+    var musicErrorCount = 0;
+    var musicErrorTimer = null;
+    var musicPlayLock = false;
+    var bgmAudio = null;
 
-    const bgmAudio = document.getElementById('bgm-audio');
-
-    bgmAudio.addEventListener('ended', function() {
-      musicErrorCount = 0;
-      if (!bgmAudio.loop) {
-        playNextMusic();
-      }
-    });
-    bgmAudio.addEventListener('error', function() {
-      var code = bgmAudio.error ? bgmAudio.error.code : 0;
-      console.warn('音乐加载失败:', currentMusicName || bgmAudio.src, 'code=' + code);
-      isMusicPlaying = false;
-      musicErrorCount++;
-      if (musicErrorCount > 5) {
-        console.warn('连续错误过多，停止自动跳过');
-        bgmAudio.removeAttribute('src');
-        bgmAudio.load();
-        currentMusicName = '';
+    if (!isInIframe && !isIframeMode) {
+      bgmAudio = document.getElementById('bgm-audio');
+      bgmAudio.addEventListener('ended', function() {
+        musicErrorCount = 0;
+        if (!bgmAudio.loop) {
+          playNextMusic();
+        }
+      });
+      bgmAudio.addEventListener('error', function() {
+        var code = bgmAudio.error ? bgmAudio.error.code : 0;
+        console.warn('音乐加载失败:', currentMusicName || bgmAudio.src, 'code=' + code);
+        isMusicPlaying = false;
+        musicErrorCount++;
+        if (musicErrorCount > 5) {
+          console.warn('连续错误过多，停止自动跳过');
+          bgmAudio.removeAttribute('src');
+          bgmAudio.load();
+          currentMusicName = '';
+          updateMusicUI();
+          return;
+        }
+        if (currentMusicName && code === 4) {
+          allMusicList = allMusicList.filter(function(m) { return m.name !== currentMusicName; });
+          currentMusicName = '';
+        }
         updateMusicUI();
-        return;
-      }
-      if (currentMusicName && code === 4) {
-        allMusicList = allMusicList.filter(function(m) { return m.name !== currentMusicName; });
-        currentMusicName = '';
-      }
-      updateMusicUI();
-      renderMusicList();
-      clearTimeout(musicErrorTimer);
-      musicErrorTimer = setTimeout(function() {
-        if (allMusicList.length > 0) playNextMusic();
-      }, 500);
-    });
+        renderMusicList();
+        clearTimeout(musicErrorTimer);
+        musicErrorTimer = setTimeout(function() {
+          if (allMusicList.length > 0) playNextMusic();
+        }, 500);
+      });
+    }
 
     // 加载音乐列表
     async function loadMusicList() {
@@ -1173,7 +1189,7 @@
           renderMusicList();
           document.getElementById('music-dir-hint').textContent = data.music_dir || 'K:\\Pictures\\音乐';
         }
-      } catch (e) { console.error('加载音乐列表失败:', e); }
+      } catch (e) { if (e.name !== 'AbortError') console.error('加载音乐列表失败:', e); }
     }
 
     // 渲染音乐设置弹窗中的列表
@@ -1326,7 +1342,12 @@
 
     // 展开/收起播放器（顶部按钮：切换隐藏/显示）
     function toggleMusicPlayer() {
+      if (isIframeMode) {
+        shellMsg({ type: 'toggle-music' });
+        return;
+      }
       const player = document.getElementById('music-player');
+      if (!player) return;
       if (player.classList.contains('hidden')) {
         showMusicPlayer();
       } else {
@@ -1336,6 +1357,10 @@
 
     // 显示音乐设置
     async function showMusicSettings() {
+      if (isIframeMode) {
+        shellMsg({ type: 'show-music-settings' });
+        return;
+      }
       loadMusicList();
       // 加载当前设置
       try {
@@ -1400,8 +1425,10 @@
         }
       });
     }
-    window.addEventListener('beforeunload', saveMusicState);
-    document.addEventListener('visibilitychange', function() { if (document.visibilityState === 'hidden') saveMusicState(); });
+    if (!isInIframe && !isIframeMode) {
+      window.addEventListener('beforeunload', saveMusicState);
+      document.addEventListener('visibilitychange', function() { if (document.visibilityState === 'hidden') saveMusicState(); });
+    }
 
     async function initMusicSystem() {
       const savedVolume = localStorage.getItem('musicVolume');
@@ -1473,7 +1500,7 @@
     function continueMemory() {
       const lastChapter = localStorage.getItem('lastChapter');
       if (lastChapter) {
-        location.href = '/chapter/' + lastChapter;
+        shellNav('/chapter/' + lastChapter);
       }
     }
 
@@ -1552,7 +1579,7 @@
       if (data.ok && data.chapter) {
         btnContinue.style.display = 'flex';
         btnContinue.onclick = function() {
-          location.href = '/chapter/' + data.chapter;
+          shellNav('/chapter/' + data.chapter);
         };
       } else {
         btnContinue.style.display = 'none';
@@ -1641,11 +1668,16 @@
     // 保存用户浏览记录
     async function saveUserLastChapter(chapterName, scrollPosition) {
       if (!currentUserId) return;
-      await fetch('/api/user/last-chapter', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ chapter_name: chapterName, scroll_position: scrollPosition })
-      });
+      try {
+        await fetch('/api/user/last-chapter', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ chapter_name: chapterName, scroll_position: scrollPosition }),
+          keepalive: true
+        });
+      } catch (e) {
+        if (e.name !== 'AbortError') console.error('保存浏览记录失败:', e);
+      }
     }
 
     // 确认删除用户
@@ -1823,24 +1855,19 @@
     }
 
     /* ========== 滚动淡入动画 (IntersectionObserver) ========== */
-    document.addEventListener('DOMContentLoaded', () => {
-      // 初始化用户系统
-      initUserSystem();
-      
-      // 初始化年份筛选器
-      initYearFilter();
-      
-      // 初始化音乐系统
-      initMusicSystem();
-      
-      // 恢复滚动位置
-      restoreScrollPosition();
-      
-      // 检查是否有最后访问的章节（本地存储，兼容旧数据）
-      checkLastChapter();
-      
-      // 滚动动画
-      const nodes = document.querySelectorAll('.timeline-node');
+    // DOM 初始化（立即执行，不依赖 DOMContentLoaded）
+    initUserSystem();
+    initYearFilter();
+    if (!isInIframe && !isIframeMode) initMusicSystem();
+    restoreScrollPosition();
+    checkLastChapter();
+
+    // 滚动动画
+    const nodes = document.querySelectorAll('.timeline-node');
+    if (isInIframe || isIframeMode) {
+      // 在 iframe 模式下直接显示所有节点
+      nodes.forEach(function(node) { node.classList.add('visible'); });
+    } else {
       const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
@@ -1851,9 +1878,8 @@
         threshold: 0.15,
         rootMargin: '0px 0px -50px 0px'
       });
-
       nodes.forEach(node => observer.observe(node));
-    });
+    }
 
     // 监听滚动事件，保存位置
     window.addEventListener('scroll', saveScrollPosition);

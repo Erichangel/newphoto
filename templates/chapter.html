@@ -910,7 +910,7 @@
 <header class="sticky top-0 z-50 glass" style="border-bottom: 1px solid rgba(233,30,99,0.08);">
   <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
     <!-- 返回按钮 -->
-    <a href="/" class="w-9 h-9 rounded-full flex items-center justify-center text-sm transition-all duration-200 hover:scale-105" style="background: rgba(233,30,99,0.1); color: #E91E63;">
+    <a href="/" onclick="if(isInIframe){event.preventDefault();shellNav('/home');}" class="w-9 h-9 rounded-full flex items-center justify-center text-sm transition-all duration-200 hover:scale-105" style="background: rgba(233,30,99,0.1); color: #E91E63;">
       <i class="fa fa-arrow-left"></i>
     </a>
     <!-- 章节标题 -->
@@ -1256,6 +1256,7 @@
 <!-- Toast -->
 <div id="toast" class="toast"></div>
 
+{% if not is_iframe %}
 <!-- 全局音乐播放器 -->
 <audio id="bgm-audio" preload="auto" loop></audio>
 <div id="music-player" class="music-player">
@@ -1314,6 +1315,7 @@
     </div>
   </div>
 </div>
+{% endif %}
 
 <!-- 章节跳转确认弹窗 -->
 <div id="modal-chapter-jump" class="modal-overlay" onclick="if(event.target===this){this.classList.remove('active');navBusy=false;}">
@@ -1336,46 +1338,60 @@ const files = [
 ];
 let currentIdx = 0;
 
+/* ========== iframe 通信 ========== */
+var isInIframe = window.parent !== window;
+var isIframeMode = {{ 'true' if is_iframe else 'false' }};
+function shellNav(url) {
+  if (isInIframe) { parent.postMessage({ type: 'navigate', url: url }, '*'); }
+  else { location.href = url; }
+}
+function shellMsg(msg) {
+  if (isInIframe) { parent.postMessage(msg, '*'); }
+}
+if (isInIframe) shellMsg({ type: 'chapter-loaded', chapter: '{{ chapter_name }}' });
+
 /* ========== 背景音乐系统（章节增强版）========== */
 const CHAPTER_NAME = '{{ chapter_name }}';
-let allMusicList = [];
-let currentMusicName = '';
-let isMusicPlaying = false;
-let musicPlayerCollapsed = false;
-let musicErrorCount = 0;
-let musicErrorTimer = null;
-let musicPlayLock = false;
+var allMusicList = [];
+var currentMusicName = '';
+var isMusicPlaying = false;
+var musicPlayerCollapsed = false;
+var musicErrorCount = 0;
+var musicErrorTimer = null;
+var musicPlayLock = false;
+var bgmAudio = null;
 
-const bgmAudio = document.getElementById('bgm-audio');
-
-bgmAudio.addEventListener('ended', function() {
-  musicErrorCount = 0;
-  if (!bgmAudio.loop) playNextMusic();
-});
-bgmAudio.addEventListener('error', function(e) {
-  const code = bgmAudio.error ? bgmAudio.error.code : 0;
-  console.warn('音乐加载失败:', currentMusicName || bgmAudio.src, 'code=' + code);
-  isMusicPlaying = false;
-  musicErrorCount++;
-  if (musicErrorCount > 5) {
-    console.warn('连续错误过多，停止自动跳过');
-    bgmAudio.removeAttribute('src');
-    bgmAudio.load();
-    currentMusicName = '';
+if (!isInIframe && !isIframeMode) {
+  bgmAudio = document.getElementById('bgm-audio');
+  bgmAudio.addEventListener('ended', function() {
+    musicErrorCount = 0;
+    if (!bgmAudio.loop) playNextMusic();
+  });
+  bgmAudio.addEventListener('error', function(e) {
+    var code = bgmAudio.error ? bgmAudio.error.code : 0;
+    console.warn('音乐加载失败:', currentMusicName || bgmAudio.src, 'code=' + code);
+    isMusicPlaying = false;
+    musicErrorCount++;
+    if (musicErrorCount > 5) {
+      console.warn('连续错误过多，停止自动跳过');
+      bgmAudio.removeAttribute('src');
+      bgmAudio.load();
+      currentMusicName = '';
+      updateMusicUI();
+      return;
+    }
+    if (currentMusicName && code === 4) {
+      allMusicList = allMusicList.filter(function(m) { return m.name !== currentMusicName; });
+      currentMusicName = '';
+    }
     updateMusicUI();
-    return;
-  }
-  if (currentMusicName && code === 4) {
-    allMusicList = allMusicList.filter(m => m.name !== currentMusicName);
-    currentMusicName = '';
-  }
-  updateMusicUI();
-  renderMusicList();
-  clearTimeout(musicErrorTimer);
-  musicErrorTimer = setTimeout(function() {
-    if (allMusicList.length > 0) playNextMusic();
-  }, 500);
-});
+    renderMusicList();
+    clearTimeout(musicErrorTimer);
+    musicErrorTimer = setTimeout(function() {
+      if (allMusicList.length > 0) playNextMusic();
+    }, 500);
+  });
+}
 
 async function loadMusicList() {
   try {
@@ -1387,7 +1403,7 @@ async function loadMusicList() {
       renderChapterMusicSelect();
       document.getElementById('music-dir-hint').textContent = data.music_dir || 'K:\\Pictures\\音乐';
     }
-  } catch(e) { console.error('加载音乐列表失败:', e); }
+  } catch(e) { if (e.name !== 'AbortError') console.error('加载音乐列表失败:', e); }
 }
 
 function renderMusicList() {
@@ -1637,10 +1653,12 @@ function resumeSavedMusic(saved, autoPlay) {
   });
 }
 
-window.addEventListener('beforeunload', saveMusicState);
-document.addEventListener('visibilitychange', function() {
-  if (document.visibilityState === 'hidden') saveMusicState();
-});
+if (!isInIframe && !isIframeMode) {
+  window.addEventListener('beforeunload', saveMusicState);
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'hidden') saveMusicState();
+  });
+}
 
 async function initMusicForChapter() {
   const savedVolume = localStorage.getItem('musicVolume');
@@ -1807,7 +1825,7 @@ function showChapterJumpConfirm(message, url) {
     modal.classList.remove('active');
     navBusy = false;
     pendingJumpUrl = null;
-    location.href = url;
+    shellNav(url);
   };
   modal.classList.add('active');
 }
@@ -2336,7 +2354,9 @@ async function loadArticleList() {
         switchArticle(currentArticleKey);
       }
     }
-  } catch (e) { console.error('加载文章列表失败:', e); }
+  } catch (e) {
+    if (e.name !== 'AbortError') console.error('加载文章列表失败:', e);
+  }
 }
 
 function renderArticleSelect() {
@@ -2360,20 +2380,21 @@ async function switchArticle(key) {
   if (article) {
     updateAuthorDisplay(article.author);
     
-    // 加载文章内容
-    const res = await fetch(`/api/articles/get?chapter={{ chapter_name }}&key=${key}`);
-    const data = await res.json();
-    if (data.ok && data.content !== undefined) {
-      document.getElementById('article-preview').innerHTML = simple_markdown(data.content);
-      document.getElementById('edit-area').value = data.content;
-      
-      // 显示编辑按钮
-      const btnEditInner = document.getElementById('btn-edit-inner');
-      if (btnEditInner) btnEditInner.style.display = '';
+    try {
+      const res = await fetch(`/api/articles/get?chapter={{ chapter_name }}&key=${key}`);
+      const data = await res.json();
+      if (data.ok && data.content !== undefined) {
+        document.getElementById('article-preview').innerHTML = simple_markdown(data.content);
+        document.getElementById('edit-area').value = data.content;
+        
+        const btnEditInner = document.getElementById('btn-edit-inner');
+        if (btnEditInner) btnEditInner.style.display = '';
+      }
+    } catch (e) {
+      if (e.name !== 'AbortError') console.error('加载文章失败:', e);
     }
   }
   
-  // 如果在编辑模式，退出编辑模式
   if (editing) toggleEdit();
   
   renderArticleSelect();
@@ -2690,7 +2711,8 @@ async function saveUserLastChapter(chapterName, scrollPosition) {
     await fetch('/api/user/last-chapter', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ chapter_name: chapterName, scroll_position: scrollPosition })
+      body: JSON.stringify({ chapter_name: chapterName, scroll_position: scrollPosition }),
+      keepalive: true
     });
   } catch (e) {
     if (e.name !== 'AbortError') console.error('保存浏览记录失败:', e);
@@ -2710,7 +2732,7 @@ if (keepEditing) {
 }
 initGallery();
 loadArticleList();
-initMusicForChapter();
+if (!isInIframe && !isIframeMode) initMusicForChapter();
 </script>
 </body>
 </html>

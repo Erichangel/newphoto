@@ -20,7 +20,7 @@ def set_cache_headers(response):
     path = request.path
     
     # HTML 页面和 API：禁止缓存
-    if '/api/' in path or path == '/' or path.endswith('.html'):
+    if '/api/' in path or path == '/' or path == '/home' or path.endswith('.html') or (response.content_type and 'text/html' in response.content_type):
         response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '0'
@@ -490,12 +490,16 @@ def api_music_settings():
 # ============ 路由 ============
 
 @app.route('/')
-def index():
-    """首页 - 章节列表"""
+def shell():
+    """Shell 页面 - 音乐播放器 + iframe（永不刷新）"""
+    return render_template('shell.html')
+
+@app.route('/home')
+def home():
+    """首页内容 - 章节列表（在 iframe 中加载）"""
     chapters = get_chapters()
     version_ts = '04/19 14:30'
-    return render_template('index.html', chapters=chapters, root_dir=ROOT_DIR, version_ts=version_ts)
-
+    return render_template('index.html', chapters=chapters, root_dir=ROOT_DIR, version_ts=version_ts, is_iframe=True)
 
 @app.route('/chapter/<path:name>')
 def chapter(name):
@@ -519,7 +523,8 @@ def chapter(name):
                            md_html=simple_markdown(md_content),
                            chapters=chapters,
                            prev_chapter=prev_chapter,
-                           next_chapter=next_chapter))
+                           next_chapter=next_chapter,
+                           is_iframe=True))
     return response
 
 
