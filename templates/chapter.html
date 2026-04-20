@@ -1482,6 +1482,10 @@ function playPrevMusic() { playRandomMusic(); }
 function playNextMusic() { playRandomMusic(); }
 
 function togglePlayPause() {
+  if (isIframeMode) {
+    shellMsg({ type: 'toggle-music' });
+    return;
+  }
   if (bgmAudio.error) {
     bgmAudio.removeAttribute('src');
     bgmAudio.load();
@@ -1515,9 +1519,11 @@ function togglePlayPause() {
 }
 
 function updateMusicUI() {
-  document.getElementById('music-play-btn').innerHTML = isMusicPlaying ? '<i class="fa fa-pause"></i>' : '<i class="fa fa-play"></i>';
-  document.getElementById('music-name').textContent = currentMusicName || (allMusicList.length > 0 ? '未播放' : '暂无音乐文件');
-  // 更新头部音乐按钮图标
+  if (isIframeMode) return;
+  const btn = document.getElementById('music-play-btn');
+  if (btn) btn.innerHTML = isMusicPlaying ? '<i class="fa fa-pause"></i>' : '<i class="fa fa-play"></i>';
+  const nameEl = document.getElementById('music-name');
+  if (nameEl) nameEl.textContent = currentMusicName || (allMusicList.length > 0 ? '未播放' : '暂无音乐文件');
   const headerBtn = document.getElementById('header-music-btn');
   if (headerBtn) {
     const icon = headerBtn.querySelector('i');
@@ -1529,12 +1535,18 @@ function updateMusicUI() {
 }
 
 function changeMusicVolume(val) {
+  if (isIframeMode) {
+    shellMsg({ type: 'music-cmd', cmd: 'volume', value: val });
+    return;
+  }
   bgmAudio.volume = val / 100;
   localStorage.setItem('musicVolume', val);
 }
 
 function showMusicPlayer() {
+  if (isIframeMode) return;
   const player = document.getElementById('music-player');
+  if (!player) return;
   player.classList.remove('hidden', 'collapsed');
   const headerBtn = document.getElementById('header-music-btn');
   if (headerBtn) {
@@ -1545,8 +1557,11 @@ function showMusicPlayer() {
   }
 }
 function closeMusicPlayer() {
-  document.getElementById('music-player').classList.add('hidden');
-  document.getElementById('music-player').classList.remove('collapsed');
+  if (isIframeMode) return;
+  const player = document.getElementById('music-player');
+  if (!player) return;
+  player.classList.add('hidden');
+  player.classList.remove('collapsed');
   const headerBtn = document.getElementById('header-music-btn');
   if (headerBtn) {
     headerBtn.style.background = 'rgba(233,30,99,0.06)';
@@ -1556,7 +1571,12 @@ function closeMusicPlayer() {
   }
 }
 function toggleMusicPlayer() {
+  if (isIframeMode) {
+    shellMsg({ type: 'toggle-music' });
+    return;
+  }
   const player = document.getElementById('music-player');
+  if (!player) return;
   if (player.classList.contains('hidden')) {
     showMusicPlayer();
   } else {
@@ -1565,6 +1585,10 @@ function toggleMusicPlayer() {
 }
 
 async function showMusicSettings() {
+  if (isIframeMode) {
+    shellMsg({ type: 'show-music-settings' });
+    return;
+  }
   await loadMusicList();
   try {
     const [settingsRes, chapterRes] = await Promise.all([

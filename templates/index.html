@@ -1302,21 +1302,26 @@
 
     // 更新播放器UI状态
     function updateMusicUI() {
+      if (isIframeMode) return;
       const btn = document.getElementById('music-play-btn');
-      btn.innerHTML = isMusicPlaying ? '<i class="fa fa-pause"></i>' : '<i class="fa fa-play"></i>';
+      if (btn) btn.innerHTML = isMusicPlaying ? '<i class="fa fa-pause"></i>' : '<i class="fa fa-play"></i>';
       const nameEl = document.getElementById('music-name');
-      nameEl.textContent = currentMusicName || '未播放';
+      if (nameEl) nameEl.textContent = currentMusicName || '未播放';
     }
 
-    // 音量调节
     function changeMusicVolume(val) {
+      if (isIframeMode) {
+        shellMsg({ type: 'music-cmd', cmd: 'volume', value: val });
+        return;
+      }
       bgmAudio.volume = val / 100;
       localStorage.setItem('musicVolume', val);
     }
 
-    // 显示播放器
     function showMusicPlayer() {
+      if (isIframeMode) return;
       const player = document.getElementById('music-player');
+      if (!player) return;
       player.classList.remove('hidden', 'collapsed');
       const headerBtn = document.getElementById('header-music-btn');
       if (headerBtn) {
@@ -1327,10 +1332,12 @@
       }
     }
 
-    // 关闭播放器（隐藏但继续后台播放）
     function closeMusicPlayer() {
-      document.getElementById('music-player').classList.add('hidden');
-      document.getElementById('music-player').classList.remove('collapsed');
+      if (isIframeMode) return;
+      const player = document.getElementById('music-player');
+      if (!player) return;
+      player.classList.add('hidden');
+      player.classList.remove('collapsed');
       const headerBtn = document.getElementById('header-music-btn');
       if (headerBtn) {
         headerBtn.style.background = 'rgba(233,30,99,0.06)';
