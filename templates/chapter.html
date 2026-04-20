@@ -1239,10 +1239,15 @@
     <p style="font-size:13px; color:#666; margin-bottom:12px;">
       将 "<span id="move-item-name" style="color:#C2185B; font-weight:600;"></span>" 移动到：
     </p>
-    <input type="hidden" id="move-item-type"> <!-- file 或 article -->
+    <input type="hidden" id="move-item-type">
     <input type="hidden" id="move-item-path">
     <input type="hidden" id="move-article-key">
-    <div id="move-chapter-list" style="border:1.5px solid rgba(233,30,99,0.15); border-radius:10px; max-height:280px; overflow-y:auto; margin-bottom:14px;">
+    <div style="margin-bottom:8px;">
+      <select id="move-year-select" onchange="filterMoveChapters()" style="padding:6px 28px 6px 12px; border-radius:8px; border:1.5px solid rgba(233,30,99,0.2); background:rgba(255,255,255,0.8); color:#C2185B; font-size:13px; font-weight:600; cursor:pointer; outline:none; appearance:none;-webkit-appearance:none; width:100%;">
+        <option value="all">全部年份</option>
+      </select>
+    </div>
+    <div id="move-chapter-list" style="border:1.5px solid rgba(233,30,99,0.15); border-radius:10px; max-height:240px; overflow-y:auto; margin-bottom:14px;">
       <div style="padding:16px; text-align:center; color:#bbb; font-size:13px;">加载章节列表...</div>
     </div>
     <p style="font-size:11px; color:#aaa;">注意：如果目标章节已有同名文件，会自动添加序号区分</p>
@@ -2584,6 +2589,7 @@ async function renameArticleAction() {
 
 /* ========== 移动到其他章节 ========== */
 let selectedTargetChapter = '';
+let allMoveChapters = [];
 
 function showMoveFileModal(path, name) {
   document.getElementById('move-modal-title').textContent = '移动文件到其他章节';
@@ -2620,20 +2626,45 @@ async function loadChapterListForMove() {
       container.innerHTML = '<div style="padding:16px; text-align:center; color:#dc2626; font-size:13px;">加载失败</div>';
       return;
     }
-    const chapters = data.chapters.filter(ch => ch !== CHAPTER_NAME);
-    if (!chapters.length) {
-      container.innerHTML = '<div style="padding:16px; text-align:center; color:#bbb; font-size:13px;">没有可用的目标章节</div>';
-      return;
-    }
-    container.innerHTML = chapters.map(ch => `
-      <div class="music-list-item${selectedTargetChapter === ch ? ' selected' : ''}" onclick="selectTargetChapter('${ch}')">
-        <i class="fa fa-folder-o" style="color:#D4A574; font-size:13px; width:16px;"></i>
-        <span class="music-item-name">${ch}</span>
-      </div>
-    `).join('');
+    allMoveChapters = data.chapters.filter(ch => ch.name !== CHAPTER_NAME);
+    const yearSet = new Set();
+    allMoveChapters.forEach(ch => { if (ch.year) yearSet.add(ch.year); });
+    const years = Array.from(yearSet).sort((a, b) => b.localeCompare(a));
+    const yearSelect = document.getElementById('move-year-select');
+    yearSelect.innerHTML = '<option value="all">全部年份</option>';
+    years.forEach(y => {
+      const opt = document.createElement('option');
+      opt.value = y;
+      opt.textContent = y + '年';
+      yearSelect.appendChild(opt);
+    });
+    renderMoveChapterList();
   } catch(e) {
     container.innerHTML = '<div style="padding:16px; text-align:center; color:#dc2626; font-size:13px;">加载失败</div>';
   }
+}
+
+function filterMoveChapters() {
+  renderMoveChapterList();
+}
+
+function renderMoveChapterList() {
+  const container = document.getElementById('move-chapter-list');
+  const yearFilter = document.getElementById('move-year-select').value;
+  let chapters = allMoveChapters;
+  if (yearFilter !== 'all') {
+    chapters = chapters.filter(ch => ch.year === yearFilter);
+  }
+  if (!chapters.length) {
+    container.innerHTML = '<div style="padding:16px; text-align:center; color:#bbb; font-size:13px;">没有可用的目标章节</div>';
+    return;
+  }
+  container.innerHTML = chapters.map(ch => `
+    <div class="music-list-item${selectedTargetChapter === ch.name ? ' selected' : ''}" onclick="selectTargetChapter('${ch.name}')">
+      <i class="fa fa-folder-o" style="color:#D4A574; font-size:13px; width:16px;"></i>
+      <span class="music-item-name">${ch.name}</span>
+    </div>
+  `).join('');
 }
 
 function selectTargetChapter(name) {

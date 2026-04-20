@@ -725,7 +725,7 @@ def api_delete_user():
 @app.route('/api/chapters', methods=['GET'])
 def api_chapters():
     chapters = get_chapters()
-    return jsonify({'ok': True, 'chapters': [c['name'] for c in chapters]})
+    return jsonify({'ok': True, 'chapters': [{'name': c['name'], 'year': c.get('year', '')} for c in chapters]})
 
 @app.route('/api/chapter/rename', methods=['POST'])
 def api_rename_chapter():
