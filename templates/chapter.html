@@ -2753,22 +2753,14 @@ function toast(msg, err) {
 }
 
 // 保存最后访问的章节到服务器（用户系统）
-async function saveUserLastChapter(chapterName, scrollPosition) {
+function saveUserLastChapter(chapterName, scrollPosition) {
   try {
-    await fetch('/api/user/last-chapter', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ chapter_name: chapterName, scroll_position: scrollPosition }),
-      keepalive: true
-    });
-  } catch (e) {
-    if (e.name !== 'AbortError') console.error('保存浏览记录失败:', e);
-  }
+    var blob = new Blob([JSON.stringify({ chapter_name: chapterName, scroll_position: scrollPosition })], { type: 'application/json' });
+    navigator.sendBeacon('/api/user/last-chapter', blob);
+  } catch (e) {}
 }
 
-// 保存最后访问的章节
 saveUserLastChapter('{{ chapter_name }}', window.scrollY || 0);
-// 兼容本地存储
 localStorage.setItem('lastChapter', '{{ chapter_name }}');
 
 // 初始化

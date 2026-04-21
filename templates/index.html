@@ -1673,18 +1673,12 @@
     }
 
     // 保存用户浏览记录
-    async function saveUserLastChapter(chapterName, scrollPosition) {
+    function saveUserLastChapter(chapterName, scrollPosition) {
       if (!currentUserId) return;
       try {
-        await fetch('/api/user/last-chapter', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ chapter_name: chapterName, scroll_position: scrollPosition }),
-          keepalive: true
-        });
-      } catch (e) {
-        if (e.name !== 'AbortError') console.error('保存浏览记录失败:', e);
-      }
+        var blob = new Blob([JSON.stringify({ chapter_name: chapterName, scroll_position: scrollPosition })], { type: 'application/json' });
+        navigator.sendBeacon('/api/user/last-chapter', blob);
+      } catch (e) {}
     }
 
     // 确认删除用户
