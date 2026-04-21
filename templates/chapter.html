@@ -934,7 +934,7 @@
         <span class="hidden sm:inline">写文章</span>
       </button>
       {% endif %}
-      <button onclick="toggleMusicPlayer()" id="header-music-btn" class="text-sm cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 hover:scale-105" style="background: rgba(233,30,99,0.08); color: #C2185B; border: 1.5px solid rgba(233,30,99,0.2);" title="背景音乐">
+      <button onclick="toggleMusicPlayer()" id="header-music-btn" class="text-sm cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 hover:scale-105" style="background: rgba(233,30,99,0.08); color: #C2185B; border: 1.5px solid rgba(233,30,99,0.2);" title="音乐播放器">
         <i class="fa fa-music"></i>
         <span class="hidden sm:inline">音乐</span>
       </button>
@@ -999,10 +999,10 @@
               <i class="fa fa-chevron-down article-select-arrow"></i>
             </div>
             <span id="article-count-badge" class="article-count-badge">0篇</span>
-            <button onclick="showCreateArticleModal()" class="btn-ghost" style="padding: 5px 12px; font-size: 12px;" title="新建文章">
+            <button onclick="showCreateArticleModal()" class="btn-ghost edit-only" style="padding: 5px 12px; font-size: 12px; display:none;" title="新建文章">
               <i class="fa fa-plus"></i> 新建
             </button>
-            <button id="btn-rename-article" onclick="showRenameArticleModal()" class="btn-ghost" style="padding: 5px 10px; font-size: 12px;" title="重命名当前文章">
+            <button id="btn-rename-article" onclick="showRenameArticleModal()" class="btn-ghost edit-only" style="padding: 5px 10px; font-size: 12px; display:none;" title="重命名当前文章">
               <i class="fa fa-pencil-square-o"></i>
             </button>
           </div>
@@ -1013,20 +1013,15 @@
               <span id="current-author-name"></span>
             </span>
             <div style="display: flex; gap: 6px;">
-              {% if md_content %}
-              <button id="btn-edit-inner" onclick="toggleEdit()" class="btn-ghost" style="padding: 5px 12px; font-size: 12px;">
-                <i class="fa fa-pen"></i> 编辑
-              </button>
-              {% endif %}
               {% if not md_content %}
-              <button onclick="startNewArticle()" class="btn-ghost" style="padding: 5px 12px; font-size: 12px;">
+              <button onclick="startNewArticle()" class="btn-ghost edit-only" style="padding: 5px 12px; font-size: 12px; display:none;">
                 <i class="fa fa-plus"></i> 新建
               </button>
               {% endif %}
-              <button id="btn-delete-article" onclick="deleteCurrentArticle()" class="btn-ghost" style="padding: 5px 10px; font-size: 12px; color: #dc2626;" title="删除当前文章">
+              <button id="btn-delete-article" onclick="deleteCurrentArticle()" class="btn-ghost edit-only" style="padding: 5px 10px; font-size: 12px; color: #dc2626; display:none;" title="删除当前文章">
                 <i class="fa fa-trash-o"></i>
               </button>
-              <button id="btn-move-article" onclick="showMoveArticleModal()" class="btn-ghost" style="padding: 5px 10px; font-size: 12px; display:none;" title="移动到其他章节">
+              <button id="btn-move-article" onclick="showMoveArticleModal()" class="btn-ghost edit-only" style="padding: 5px 10px; font-size: 12px; display:none;" title="移动到其他章节">
                 <i class="fa fa-arrows"></i> 移动章节
               </button>
             </div>
@@ -2242,15 +2237,11 @@ function toggleEdit() {
   document.getElementById('article-edit').style.display = editing ? 'block' : 'none';
   const text = editing ? '<i class="fa fa-eye"></i> 预览' : '<i class="fa fa-pencil"></i> 编辑模式';
   const btnEdit = document.getElementById('btn-edit');
-  const btnEditInner = document.getElementById('btn-edit-inner');
   if (btnEdit) btnEdit.innerHTML = text;
-  if (btnEditInner) btnEditInner.innerHTML = text;
-  // 进入编辑模式时加载作者选择器
   if (editing) loadEditAuthorSelect();
-  // 显示/隐藏移动文章按钮
-  const btnMoveArticle = document.getElementById('btn-move-article');
-  if (btnMoveArticle) btnMoveArticle.style.display = editing ? '' : 'none';
-  // 重新渲染缩略图和主显示区域，显示/隐藏操作按钮
+  document.querySelectorAll('.edit-only').forEach(function(el) {
+    el.style.display = editing ? '' : 'none';
+  });
   renderThumbnails();
   updateMainDisplay();
 }
@@ -2754,10 +2745,14 @@ function toast(msg, err) {
 
 // 保存最后访问的章节到服务器（用户系统）
 function saveUserLastChapter(chapterName, scrollPosition) {
-  try {
-    var blob = new Blob([JSON.stringify({ chapter_name: chapterName, scroll_position: scrollPosition })], { type: 'application/json' });
-    navigator.sendBeacon('/api/user/last-chapter', blob);
-  } catch (e) {}
+  if (isIframeMode) {
+    try { parent.postMessage({ type: 'save-last-chapter', chapter: chapterName, scroll: scrollPosition }, '*'); } catch(e) {}
+  } else {
+    try {
+      var blob = new Blob([JSON.stringify({ chapter_name: chapterName, scroll_position: scrollPosition })], { type: 'application/json' });
+      navigator.sendBeacon('/api/user/last-chapter', blob);
+    } catch (e) {}
+  }
 }
 
 saveUserLastChapter('{{ chapter_name }}', window.scrollY || 0);

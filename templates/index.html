@@ -931,12 +931,25 @@
         <i class="fa fa-cog"></i>
         <span class="hidden sm:inline">设置</span>
       </button>
-      <button onclick="toggleMusicPlayer()" id="header-music-btn" title="背景音乐" style="cursor:pointer; display:flex; align-items:center; gap:4px; padding:6px 14px; border-radius:10px; border:1.5px solid rgba(233,30,99,0.2); background:rgba(233,30,99,0.08); color:#C2185B; font-size:13px; transition:all 0.2s;">
+      <button onclick="toggleMusicPlayer()" id="header-music-btn" title="音乐播放器" style="cursor:pointer; display:flex; align-items:center; gap:4px; padding:6px 14px; border-radius:10px; border:1.5px solid rgba(233,30,99,0.2); background:rgba(233,30,99,0.08); color:#C2185B; font-size:13px; transition:all 0.2s;">
         <i class="fa fa-music"></i>
         <span class="hidden sm:inline">音乐</span>
       </button>
     </div>
   </header>
+
+  <!-- 用户选择遮罩（未选择用户时显示） -->
+  <div id="user-select-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:500; background:rgba(255,255,255,0.97); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); justify-content:center; align-items:center; flex-direction:column;">
+    <div style="text-align:center; margin-bottom:32px;">
+      <i class="fa fa-heart" style="font-size:36px; color:#E91E63; margin-bottom:12px; display:block;"></i>
+      <h2 class="serif" style="font-size:28px; color:#C2185B; font-weight:700; margin-bottom:8px;">时光印记</h2>
+      <p style="font-size:14px; color:#999;">请选择你的身份，开始回忆之旅</p>
+    </div>
+    <div id="overlay-user-list" style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center; max-width:400px; margin-bottom:24px;"></div>
+    <button onclick="showCreateUserModal(); document.getElementById('modal-create-user').classList.add('active');" style="padding:10px 24px; border-radius:12px; border:1.5px dashed rgba(233,30,99,0.3); background:transparent; color:#E91E63; font-size:14px; cursor:pointer; transition:all 0.2s;">
+      <i class="fa fa-user-plus" style="margin-right:6px;"></i>新建用户
+    </button>
+  </div>
 
   <!-- 时间线区域 -->
   <main class="timeline-container">
@@ -1565,32 +1578,85 @@
     }
 
     async function initUserSystem() {
-      // 获取当前用户
       const res = await fetch('/api/user/current');
       const data = await res.json();
       if (data.ok && data.user) {
         currentUserId = data.user.id;
         document.getElementById('current-user-name').textContent = data.user.name;
-        // 获取用户的最后访问章节
         loadUserLastChapter();
+      } else {
+        showUserSelectOverlay();
       }
-      // 加载用户列表
       loadUserList();
     }
 
-    // 加载用户最后访问的章节
+    function showUserSelectOverlay() {
+      var overlay = document.getElementById('user-select-overlay');
+      overlay.style.display = 'flex';
+      loadOverlayUserList();
+    }
+
+    function hideUserSelectOverlay() {
+      document.getElementById('user-select-overlay').style.display = 'none';
+    }
+
+    async function loadOverlayUserList() {
+      var res = await fetch('/api/user/list');
+      var data = await res.json();
+      var container = document.getElementById('overlay-user-list');
+      if (data.ok && data.users.length > 0) {
+        container.innerHTML = data.users.map(function(u) {
+          return '<div onclick="selectUser(\'' + u.id + '\', \'' + u.name.replace(/'/g, "\\'") + '\')" style="padding:14px 28px; border-radius:14px; border:1.5px solid rgba(233,30,99,0.2); background:rgba(255,255,255,0.9); cursor:pointer; transition:all 0.2s; text-align:center; min-width:100px;" onmouseover="this.style.borderColor=\'#E91E63\';this.style.background=\'rgba(233,30,99,0.06)\'" onmouseout="this.style.borderColor=\'rgba(233,30,99,0.2)\';this.style.background=\'rgba(255,255,255,0.9)\'">' +
+            '<i class="fa fa-user" style="font-size:20px; color:#E91E63; display:block; margin-bottom:6px;"></i>' +
+            '<span style="font-size:14px; color:#C2185B; font-weight:600;">' + u.name + '</span>' +
+          '</div>';
+        }).join('');
+      } else {
+        container.innerHTML = '<p style="color:#999; font-size:14px;">还没有用户，请创建一个</p>';
+      }
+    }
+
     async function loadUserLastChapter() {
       const res = await fetch('/api/user/last-chapter');
       const data = await res.json();
       const btnContinue = document.getElementById('btn-continue');
+      document.querySelectorAll('.last-view-indicator').forEach(function(el) { el.remove(); });
       if (data.ok && data.chapter) {
         btnContinue.style.display = 'flex';
         btnContinue.onclick = function() {
           shellNav('/chapter/' + data.chapter);
         };
+        scrollToLastChapter(data.chapter);
       } else {
         btnContinue.style.display = 'none';
       }
+    }
+
+    function scrollToLastChapter(chapterName) {
+      var nodes = document.querySelectorAll('.timeline-node');
+      var targetNode = null;
+      nodes.forEach(function(node) {
+        if (node.getAttribute('onclick') && node.getAttribute('onclick').indexOf(chapterName) !== -1) {
+          targetNode = node;
+        }
+      });
+      if (!targetNode) return;
+      setTimeout(function() {
+        targetNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        var indicator = document.createElement('div');
+        indicator.className = 'last-view-indicator';
+        indicator.innerHTML = '<i class="fa fa-bookmark" style="margin-right:4px;"></i>上次观看到这里';
+        indicator.style.cssText = 'position:absolute; top:-28px; left:50%; transform:translateX(-50%); background:linear-gradient(135deg,#E91E63,#FF6090); color:white; font-size:11px; padding:3px 12px; border-radius:10px; white-space:nowrap; box-shadow:0 2px 8px rgba(233,30,99,0.3); z-index:10; animation:lastViewPulse 2s ease-in-out infinite;';
+        targetNode.style.position = 'relative';
+        targetNode.appendChild(indicator);
+        var style = document.getElementById('last-view-style');
+        if (!style) {
+          style = document.createElement('style');
+          style.id = 'last-view-style';
+          style.textContent = '@keyframes lastViewPulse { 0%,100%{opacity:1;transform:translateX(-50%) translateY(0)} 50%{opacity:0.7;transform:translateX(-50%) translateY(-3px)} }';
+          document.head.appendChild(style);
+        }
+      }, 300);
     }
 
     // 加载用户列表
@@ -1631,7 +1697,9 @@
         currentUserId = userId;
         document.getElementById('current-user-name').textContent = userName;
         document.getElementById('user-menu').style.display = 'none';
+        hideUserSelectOverlay();
         loadUserLastChapter();
+        loadUserList();
         toast('已切换到用户：' + userName);
       } else {
         toast(data.error || '切换失败', true);
@@ -1646,7 +1714,6 @@
       document.getElementById('create-user-name').focus();
     }
 
-    // 创建用户
     async function createUser() {
       const name = document.getElementById('create-user-name').value.trim();
       if (!name) {
@@ -1664,6 +1731,7 @@
         currentUserId = data.user_id;
         document.getElementById('current-user-name').textContent = data.name;
         closeModals();
+        hideUserSelectOverlay();
         loadUserList();
         loadUserLastChapter();
         toast('用户创建成功：' + data.name);

@@ -52,6 +52,36 @@
       font-size: 12px; color: #C2185B; font-weight: 500;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
+    .music-progress-wrap {
+      position: relative; height: 14px; margin-top: 2px; cursor: pointer;
+      display: flex; align-items: center;
+    }
+    .music-progress-wrap::before {
+      content: ''; position: absolute; left: 0; right: 0; top: 50%;
+      transform: translateY(-50%); height: 3px; background: rgba(233,30,99,0.12);
+      border-radius: 2px;
+    }
+    .music-progress-bar {
+      position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+      height: 3px; background: linear-gradient(90deg, #E91E63, #FF6090);
+      border-radius: 2px; width: 0; pointer-events: none;
+    }
+    .music-progress-handle {
+      position: absolute; top: 50%; transform: translate(-50%, -50%);
+      width: 10px; height: 10px; border-radius: 50%;
+      background: #E91E63; box-shadow: 0 0 4px rgba(233,30,99,0.3);
+      left: 0; pointer-events: none; opacity: 0; transition: opacity 0.15s;
+    }
+    .music-progress-wrap:hover .music-progress-handle,
+    .music-progress-wrap.dragging .music-progress-handle { opacity: 1; }
+    .music-progress-wrap:hover::before,
+    .music-progress-wrap.dragging::before { height: 4px; }
+    .music-progress-wrap:hover .music-progress-bar,
+    .music-progress-wrap.dragging .music-progress-bar { height: 4px; }
+    .music-time {
+      font-size: 10px; color: #aaa; margin-top: 1px;
+      display: flex; gap: 2px;
+    }
     .music-controls { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
     .music-btn {
       width: 30px; height: 30px; border-radius: 50%; border: none;
@@ -135,6 +165,11 @@
     <button class="music-icon" onclick="toggleMusicPlayer()" title="展开/收起"><i class="fa fa-music"></i></button>
     <div class="music-info">
       <div class="music-name" id="music-name">未播放</div>
+      <div class="music-progress-wrap" id="music-progress-wrap">
+        <div class="music-progress-bar" id="music-progress-bar"></div>
+        <div class="music-progress-handle" id="music-progress-handle"></div>
+      </div>
+      <div class="music-time"><span id="music-time-current">0:00</span> / <span id="music-time-total">0:00</span></div>
     </div>
     <div class="music-controls">
       <button class="music-btn" onclick="playPrevMusic()" title="上一首"><i class="fa fa-step-backward"></i></button>
@@ -228,6 +263,73 @@ bgmAudio.addEventListener('error', function() {
     if (allMusicList.length > 0) playNextMusic();
   }, 500);
 });
+bgmAudio.addEventListener('timeupdate', updateProgress);
+bgmAudio.addEventListener('loadedmetadata', function() {
+  document.getElementById('music-time-total').textContent = formatTime(bgmAudio.duration);
+});
+
+var progressDragging = false;
+var progressWrap = document.getElementById('music-progress-wrap');
+progressWrap.addEventListener('mousedown', function(e) {
+  progressDragging = true;
+  progressWrap.classList.add('dragging');
+  seekToPosition(e);
+});
+document.addEventListener('mousemove', function(e) {
+  if (progressDragging) seekToPosition(e);
+});
+document.addEventListener('mouseup', function() {
+  if (progressDragging) {
+    progressDragging = false;
+    progressWrap.classList.remove('dragging');
+  }
+});
+progressWrap.addEventListener('touchstart', function(e) {
+  progressDragging = true;
+  progressWrap.classList.add('dragging');
+  seekToPosition(e.touches[0]);
+}, { passive: true });
+document.addEventListener('touchmove', function(e) {
+  if (progressDragging) seekToPosition(e.touches[0]);
+}, { passive: true });
+document.addEventListener('touchend', function() {
+  if (progressDragging) {
+    progressDragging = false;
+    progressWrap.classList.remove('dragging');
+  }
+});
+
+function seekToPosition(e) {
+  var rect = progressWrap.getBoundingClientRect();
+  var x = e.clientX - rect.left;
+  var ratio = Math.max(0, Math.min(1, x / rect.width));
+  if (bgmAudio.duration && isFinite(bgmAudio.duration)) {
+    bgmAudio.currentTime = ratio * bgmAudio.duration;
+  }
+  updateProgressBar(ratio);
+}
+
+function updateProgress() {
+  if (progressDragging) return;
+  if (bgmAudio.duration && isFinite(bgmAudio.duration)) {
+    var ratio = bgmAudio.currentTime / bgmAudio.duration;
+    updateProgressBar(ratio);
+    document.getElementById('music-time-current').textContent = formatTime(bgmAudio.currentTime);
+  }
+}
+
+function updateProgressBar(ratio) {
+  var pct = (ratio * 100).toFixed(2) + '%';
+  document.getElementById('music-progress-bar').style.width = pct;
+  document.getElementById('music-progress-handle').style.left = pct;
+}
+
+function formatTime(sec) {
+  if (!sec || !isFinite(sec)) return '0:00';
+  var m = Math.floor(sec / 60);
+  var s = Math.floor(sec % 60);
+  return m + ':' + (s < 10 ? '0' : '') + s;
+}
 
 async function loadMusicList() {
   try {
@@ -440,6 +542,27 @@ function saveChapterMusic() {
 }
 
 /* ========== iframe 导航控制 ========== */
+var pendingLastChapter = null;
+
+function saveLastChapterFromIframe(chapter, scroll) {
+  pendingLastChapter = { chapter: chapter, scroll: scroll };
+  doSaveLastChapter();
+}
+
+function doSaveLastChapter() {
+  if (!pendingLastChapter) return;
+  var data = pendingLastChapter;
+  pendingLastChapter = null;
+  try {
+    fetch('/api/user/last-chapter', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ chapter_name: data.chapter, scroll_position: data.scroll }),
+      keepalive: true
+    }).catch(function(){});
+  } catch(e) {}
+}
+
 function navigateTo(url) {
   contentFrame.src = url;
 }
@@ -460,8 +583,11 @@ window.addEventListener('message', function(e) {
     case 'home-loaded':
       currentChapter = '';
       break;
+    case 'save-last-chapter':
+      saveLastChapterFromIframe(msg.chapter, msg.scroll);
+      break;
     case 'toggle-music':
-      togglePlayPause();
+      toggleMusicPlayer();
       break;
     case 'show-music-settings':
       showMusicSettings();
