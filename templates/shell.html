@@ -11,38 +11,33 @@
 
     #content-frame {
       width: 100%;
-      height: 100vh;
+      height: 100%;
       border: none;
       display: block;
     }
 
-    /* ========== 音乐播放器（覆盖在 iframe 上层） ========== */
+    /* ========== 音乐播放器 ========== */
     .music-player {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      z-index: 10000;
-      background: rgba(255, 255, 255, 0.98);
+      z-index: 180;
+      background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      border-top: 1px solid rgba(233, 30, 99, 0.12);
-      border-radius: 0;
+      border-top: 1px solid rgba(233, 30, 99, 0.15);
       padding: 8px 20px;
       display: flex;
       align-items: center;
       gap: 10px;
-      box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.08);
-      transition: all 0.3s ease;
+      box-shadow: 0 -4px 24px rgba(233, 30, 99, 0.12);
+      transition: transform 0.3s ease;
       height: 52px;
     }
-    .music-player.hidden { 
-      opacity: 0; 
-      pointer-events: none !important; 
-      transform: translateY(10px);
-    }
-    .music-player.collapsed { transform: translateY(calc(100% - 36px)); opacity: 0.3; }
-    .music-player.collapsed:hover { transform: translateY(0); opacity: 1; }
+    .music-player.hidden { display: none !important; }
+    .music-player.collapsed { transform: translateY(calc(100% - 36px)); }
+    .music-player.collapsed:hover { transform: translateY(0); }
     .music-icon {
       width: 28px; height: 28px; border-radius: 50%;
       background: linear-gradient(135deg, #E91E63, #FF6090);
@@ -157,520 +152,20 @@
       background: linear-gradient(135deg, #E91E63, #FF6090);
       color: white; font-size: 12px; cursor: pointer;
     }
-
-    /* ========== QQ 风格登录界面（粉色渐变） ========== */
-    #start-screen {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      z-index: 9999; background: linear-gradient(135deg, #FFE4EC 0%, #FFB6C1 30%, #E91E63 100%);
-      display: flex; align-items: center; justify-content: center;
-      transition: opacity 0.4s ease, visibility 0.4s ease;
-      overflow: hidden;
-    }
-    #start-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-    
-    /* 背景 UI 点缀 - 漂浮花瓣 */
-    .petal {
-      position: absolute;
-      background: rgba(255, 255, 255, 0.6);
-      border-radius: 50% 0 50% 0;
-      animation: floatPetal linear infinite;
-      pointer-events: none;
-    }
-    @keyframes floatPetal {
-      0% { transform: translateY(100vh) rotate(0deg) scale(0.8); opacity: 0; }
-      10% { opacity: 0.8; }
-      90% { opacity: 0.8; }
-      100% { transform: translateY(-100px) rotate(720deg) scale(1); opacity: 0; }
-    }
-    .petal:nth-child(1) { width: 12px; height: 12px; left: 5%; animation-duration: 8s; animation-delay: 0s; }
-    .petal:nth-child(2) { width: 8px; height: 8px; left: 15%; animation-duration: 10s; animation-delay: 1s; }
-    .petal:nth-child(3) { width: 10px; height: 10px; left: 25%; animation-duration: 12s; animation-delay: 2s; }
-    .petal:nth-child(4) { width: 14px; height: 14px; left: 35%; animation-duration: 9s; animation-delay: 0.5s; }
-    .petal:nth-child(5) { width: 9px; height: 9px; left: 45%; animation-duration: 11s; animation-delay: 1.5s; }
-    .petal:nth-child(6) { width: 11px; height: 11px; left: 55%; animation-duration: 10s; animation-delay: 2.5s; }
-    .petal:nth-child(7) { width: 13px; height: 13px; left: 65%; animation-duration: 8s; animation-delay: 0.8s; }
-    .petal:nth-child(8) { width: 7px; height: 7px; left: 75%; animation-duration: 13s; animation-delay: 1.2s; }
-    .petal:nth-child(9) { width: 10px; height: 10px; left: 85%; animation-duration: 9s; animation-delay: 2.2s; }
-    .petal:nth-child(10) { width: 12px; height: 12px; left: 95%; animation-duration: 11s; animation-delay: 0.3s; }
-    
-    /* 光晕装饰 */
-    .glow-circle {
-      position: absolute;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%);
-      animation: pulseGlow 4s ease-in-out infinite;
-      pointer-events: none;
-    }
-    .glow-circle-1 { width: 200px; height: 200px; top: 10%; left: 10%; animation-delay: 0s; }
-    .glow-circle-2 { width: 150px; height: 150px; top: 60%; right: 15%; animation-delay: 1s; }
-    .glow-circle-3 { width: 100px; height: 100px; bottom: 20%; left: 20%; animation-delay: 2s; }
-    @keyframes pulseGlow {
-      0%, 100% { transform: scale(1); opacity: 0.5; }
-      50% { transform: scale(1.2); opacity: 0.8; }
-    }
-    .login-panel {
-      width: 340px; background: rgba(255,255,255,0.95);
-      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-      border-radius: 16px;
-      box-shadow: 0 20px 60px rgba(233,30,99,0.25);
-      border: 1px solid rgba(255,255,255,0.6);
-      overflow: hidden;
-    }
-    .login-header {
-      background: linear-gradient(135deg, #E91E63, #FF6090);
-      padding: 28px 24px 22px; text-align: center; color: white;
-    }
-    .login-header h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; letter-spacing: 3px; }
-    .login-header p { font-size: 12px; opacity: 0.9; }
-    .login-body { padding: 24px 24px 20px; }
-    .login-field { margin-bottom: 16px; }
-    .login-field label { display: block; font-size: 12px; color: #888; margin-bottom: 6px; font-weight: 500; }
-    .login-select {
-      width: 100%; padding: 10px 14px; border: 1.5px solid #e0e0e0; border-radius: 8px;
-      font-size: 14px; color: #333; outline: none; cursor: pointer;
-      background: #fafafa; transition: border-color 0.2s; appearance: none;
-      -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat; background-position: right 12px center;
-    }
-    .login-select:focus { border-color: #E91E63; background: #fff; box-shadow: 0 0 0 3px rgba(233,30,99,0.08); }
-    .login-options { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-    .login-checkbox {
-      display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 12px; color: #666;
-    }
-    .login-checkbox input { accent-color: #E91E63; width: 14px; height: 14px; }
-    .login-link-btn {
-      font-size: 12px; color: #E91E63; cursor: pointer; background: none; border: none;
-      padding: 4px 8px; border-radius: 4px; transition: background 0.15s;
-    }
-    .login-link-btn:hover { background: rgba(233,30,99,0.06); }
-    .login-btn {
-      width: 100%; padding: 11px; border-radius: 8px; border: none;
-      background: linear-gradient(135deg, #E91E63, #FF6090);
-      color: white; font-size: 15px; font-weight: 600; cursor: pointer;
-      transition: all 0.2s; letter-spacing: 2px;
-    }
-    .login-btn:hover { transform: scale(1.01); box-shadow: 0 4px 16px rgba(233,30,99,0.35); }
-    .login-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
-    .login-footer {
-      display: flex; align-items: center; justify-content: center; gap: 16px;
-      padding-top: 16px; border-top: 1px solid rgba(233,30,99,0.1); margin-top: 4px;
-    }
-    .login-footer-btn {
-      width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid rgba(233,30,99,0.2);
-      background: rgba(233,30,99,0.03); cursor: pointer; display: flex; align-items: center; justify-content: center;
-      font-size: 16px; color: #E91E63; transition: all 0.2s;
-    }
-    .login-footer-btn:hover { border-color: #E91E63; background: rgba(233,30,99,0.08); transform: scale(1.05); }
-
-    /* 快速登录用户卡片 */
-    .quick-user-card {
-      display: flex; flex-direction: column; align-items: center;
-      padding: 12px 16px; min-width: 80px; cursor: pointer;
-      background: rgba(255,255,255,0.6); border-radius: 14px;
-      border: 2px solid transparent; transition: all 0.25s;
-    }
-    .quick-user-card:hover {
-      border-color: #E91E63; background: rgba(233,30,99,0.08);
-      transform: translateY(-3px);
-      box-shadow: 0 8px 20px rgba(233,30,99,0.15);
-    }
-    .quick-avatar {
-      width: 40px; height: 40px; border-radius: 50%;
-      background: linear-gradient(135deg, #E91E63, #FF6090);
-      color: white; display: flex; align-items: center;
-      justify-content: center; font-size: 16px; font-weight: 700;
-      margin-bottom: 6px; box-shadow: 0 3px 10px rgba(233,30,99,0.25);
-    }
-    .quick-name { font-size: 12px; color: #555; font-weight: 600; text-align:center; }
-
-    /* ========== 设置模态框 ========== */
-    .settings-modal-overlay {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      z-index: 10000; background: rgba(0,0,0,0.5);
-      display: none; align-items: center; justify-content: center;
-    }
-    .settings-modal-overlay.show { display: flex; }
-    .settings-modal {
-      width: 400px; background: white; border-radius: 16px;
-      box-shadow: 0 20px 60px rgba(233,30,99,0.3);
-      overflow: hidden; animation: modalFadeIn 0.25s ease;
-    }
-    @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-    .sm-header {
-      background: linear-gradient(135deg, #E91E63, #FF6090);
-      padding: 18px 20px; display: flex; align-items: center; justify-content: space-between;
-    }
-    .sm-title { font-size: 15px; font-weight: 600; color: white; }
-    .sm-close {
-      width: 28px; height: 28px; border-radius: 50%; border: none;
-      background: rgba(255,255,255,0.2); color: white;
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
-      font-size: 14px; transition: all 0.2s;
-    }
-    .sm-close:hover { background: rgba(255,255,255,0.3); transform: scale(1.1); }
-    .sm-body { padding: 20px; }
-    .sm-group { margin-bottom: 16px; }
-    .sm-group label { display: block; font-size: 12px; color: #888; margin-bottom: 6px; font-weight: 500; }
-    .sm-input {
-      width: 100%; padding: 9px 12px; border: 1.5px solid #e0e0e0; border-radius: 8px;
-      font-size: 13px; outline: none; transition: border-color 0.2s;
-    }
-    .sm-input:focus { border-color: #E91E63; box-shadow: 0 0 0 3px rgba(233,30,99,0.06); }
-    .sm-folder-row {
-      display: flex; align-items: center; gap: 8px;
-    }
-    .sm-folder-row .sm-input { flex: 1; }
-    .sm-folder-btn {
-      flex-shrink: 0; padding: 9px 16px;
-      background: linear-gradient(135deg, #E91E63, #FF6090);
-      color: white; border: none; border-radius: 8px;
-      font-size: 12px; cursor: pointer; white-space: nowrap;
-      transition: opacity 0.2s, transform 0.1s;
-    }
-    .sm-folder-btn:hover { opacity: 0.88; transform: translateY(-1px); }
-    .sm-folder-btn:active { transform: translateY(0); }
-    .sm-row {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 0; border-bottom: 1px solid #f5f5f5;
-    }
-    .sm-row:last-child { border-bottom: none; }
-    .sm-row-label { font-size: 13px; color: #444; }
-    .sm-row-label sub { font-size: 10px; color: #999; display: block; font-weight: 400; margin-top: 2px; }
-    .sm-toggle {
-      width: 40px; height: 22px; border-radius: 11px; position: relative;
-      cursor: pointer; transition: background 0.25s; flex-shrink: 0;
-      background: #ddd; border: none; padding: 0;
-    }
-    .sm-toggle.on { background: linear-gradient(135deg, #E91E63, #FF6090); }
-    .sm-toggle::after {
-      content: ''; position: absolute; top: 2px; left: 2px;
-      width: 18px; height: 18px; border-radius: 50%; background: white;
-      transition: transform 0.25s; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-    }
-    .sm-toggle.on::after { transform: translateX(18px); }
-    .sm-footer {
-      padding: 16px 20px; background: #fafafa;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .sm-logout-btn {
-      padding: 8px 16px; border-radius: 8px; border: none;
-      background: #fef2f2; color: #dc2626; font-size: 13px; font-weight: 500;
-      cursor: pointer; transition: all 0.2s;
-    }
-    .sm-logout-btn:hover { background: #fee2e2; }
-    .sm-save-btn {
-      padding: 8px 20px; border-radius: 8px; border: none;
-      background: linear-gradient(135deg, #E91E63, #FF6090);
-      color: white; font-size: 13px; font-weight: 600;
-      cursor: pointer; transition: all 0.2s;
-    }
-    .sm-save-btn:hover { transform: scale(1.03); box-shadow: 0 4px 12px rgba(233,30,99,0.3); }
-    .sm-hint { font-size: 11px; color: #4CAF50; margin-left: 10px; display: none; }
-    .sm-hint.show { display: inline; }
-
-    /* ========== 黑胶唱片迷你播放器（网易云风格） ========== */
-    .vinyl-mini-player {
-      position: fixed;
-      bottom: 0;
-      right: 0;
-      z-index: 10001;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      transform: scale(0.5);
-      transform-origin: bottom right;
-    }
-    .vinyl-mini-player.hidden { opacity: 0; pointer-events: none; transform: scale(0.5) translateY(20px); }
-    
-    /* 唱片容器 */
-    .vinyl-disc-wrap {
-      width: 200px; height: 200px; position: relative;
-    }
-    /* 黑胶唱片图片 - 用CSS绘制逼真效果 */
-    .vinyl-disc {
-      width: 100%; height: 100%; border-radius: 50%;
-      background:
-        radial-gradient(circle at center,
-          #222 0%, #222 15%,
-          #1a1a1a 15%, #1a1a1a 18%,
-          #222 18%, #222 20%,
-          #1a1a1a 20%, #1a1a1a 22%,
-          #222 22%, #222 24%,
-          #1a1a1a 24%, #1a1a1a 26%,
-          #222 26%, #222 28%,
-          #1a1a1a 28%, #1a1a1a 30%,
-          #222 30%, #222 33%,
-          #1a1a1a 33%, #1a1a1a 36%,
-          #222 36%, #222 40%,
-          #1a1a1a 40%, #1a1a1a 45%,
-          #222 45%, #222 52%,
-          #1a1a1a 52%, #1a1a1a 60%,
-          #111 60%, #111 100%
-        );
-      box-shadow:
-        0 4px 20px rgba(0,0,0,0.4),
-        inset 0 0 0 2px rgba(255,255,255,0.05),
-        inset 0 0 80px rgba(0,0,0,0.5);
-      position: relative;
-      animation: none;
-    }
-    .vinyl-disc.spinning {
-      animation: vinylSpin 4s linear infinite;
-    }
-    @keyframes vinylSpin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-    /* 唱片中心标签区 */
-    .vinyl-label {
-      position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: 72px; height: 72px; border-radius: 50%;
-      background:
-        radial-gradient(circle at 65% 35%,
-          rgba(255,255,255,0.08) 0%, transparent 50%),
-        linear-gradient(135deg, #E91E63, #FF6090);
-      box-shadow:
-        0 0 20px rgba(233,30,99,0.3),
-        inset 0 2px 4px rgba(255,255,255,0.2),
-        inset 0 -2px 4px rgba(0,0,0,0.2);
-      display: flex; align-items: center; justify-content: center;
-    }
-    .vinyl-label::before {
-      content: ''; width: 56px; height: 56px; border-radius: 50%;
-      border: 1.5px solid rgba(255,255,255,0.25);
-    }
-    .vinyl-label-inner {
-      width: 12px; height: 12px; border-radius: 50%; background: white;
-      box-shadow: 0 0 6px rgba(255,255,255,0.8);
-      position: absolute;
-    }
-    /* 高光反射 */
-    .vinyl-highlight {
-      position: absolute; top: 8%; left: 10%;
-      width: 35%; height: 25%; border-radius: 50%;
-      background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 70%);
-      transform: rotate(-20deg);
-      pointer-events: none;
-    }
-
-    /* ========== 唱臂（固定不转） ========== */
-    .vinyl-tonearm {
-      position: absolute;
-      top: -10px; right: 16px;
-      width: 90px; height: 110px;
-      z-index: 5;
-      pointer-events: none;
-      transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-      transform-origin: 85% 8%;
-      transform: rotate(-28deg);
-    }
-    .vinyl-disc.spinning ~ .vinyl-tonearm,
-    .vinyl-disc-wrap:has(.spinning) .vinyl-tonearm {
-      transform: rotate(-12deg);
-    }
-    /* 唱臂杆 */
-    .tonearm-pivot {
-      position: absolute; top: 8px; right: 14%;
-      width: 10px; height: 10px; border-radius: 50%;
-      background: linear-gradient(135deg, #ddd, #aaa);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-    }
-    .tonearm-arm {
-      position: absolute; top: 13px; right: 17%;
-      width: 4px; height: 75px;
-      background: linear-gradient(to bottom, #ccc 0%, #bbb 40%, #999 100%);
-      border-radius: 2px;
-      transform-origin: top center;
-      transform: rotate(18deg);
-      box-shadow: 1px 2px 4px rgba(0,0,0,0.2);
-    }
-    /* 唱头 */
-    .tonearm-head {
-      position: absolute; bottom: -2px; left: -7px;
-      width: 18px; height: 24px;
-      transform: rotate(55deg);
-    }
-    .tonearm-head-body {
-      width: 100%; height: 16px;
-      background: linear-gradient(to bottom, #bbb, #888);
-      border-radius: 3px 3px 8px 8px;
-      clip-path: polygon(20% 0, 100% 0, 80% 100%, 0% 100%);
-    }
-    .tonearm-needle {
-      position: absolute; bottom: 0; left: 1px;
-      width: 2px; height: 10px;
-      background: linear-gradient(to bottom, #888, #444);
-      transform: rotate(-5deg);
-    }
-
-    /* ========== 控制按钮（居中在唱片上，常驻显示） ========== */
-    .vinyl-controls {
-      position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      display: flex; align-items: center; gap: 6px;
-      pointer-events: auto;
-      z-index: 10;
-    }
-    .v-btn {
-      width: 30px; height: 30px; border-radius: 50%;
-      border: none; background: rgba(255,255,255,0.95);
-      color: #C2185B; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 13px; transition: all 0.2s ease;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-      backdrop-filter: blur(4px);
-    }
-    .v-btn:hover { background: white; transform: scale(1.05); box-shadow: 0 3px 12px rgba(0,0,0,0.2); }
-    .v-btn-play {
-      width: 34px; height: 34px;
-      background: linear-gradient(135deg, #E91E63, #FF6090);
-      color: white;
-      box-shadow: 0 3px 14px rgba(233,30,99,0.35);
-    }
-    .v-btn-play:hover { transform: scale(1.05); box-shadow: 0 5px 20px rgba(233,30,99,0.5); }
-
   </style>
 </head>
 <body>
-  <!-- QQ 风格登录界面 -->
-  <div id="start-screen">
-    <!-- 背景 UI 点缀 -->
-    <div class="petal"></div>
-    <div class="petal"></div>
-    <div class="petal"></div>
-    <div class="petal"></div>
-    <div class="petal"></div>
-    <div class="petal"></div>
-    <div class="petal"></div>
-    <div class="petal"></div>
-    <div class="petal"></div>
-    <div class="petal"></div>
-    <div class="glow-circle glow-circle-1"></div>
-    <div class="glow-circle glow-circle-2"></div>
-    <div class="glow-circle glow-circle-3"></div>
-    
-    <div class="login-panel">
-      <div class="login-header">
-        <h1>时光印记</h1>
-        <p>选择用户，开启回忆之旅</p>
-      </div>
-      <div class="login-body">
-        <!-- 快速登录用户卡片 -->
-        <div id="quick-users" style="display:flex; gap:10px; margin-bottom:16px; justify-content:center;"></div>
-        
-        <div class="login-field">
-          <label>选择用户</label>
-          <select class="login-select" id="login-user-select" onchange="onLoginSelectChange()">
-            <option value="">-- 请选择 --</option>
-          </select>
-        </div>
-        <div class="login-options">
-          <button class="login-link-btn" onclick="showRegisterModal()">注册新用户</button>
-        </div>
-        <button class="login-btn" id="btn-login" disabled onclick="doLogin()">登 录</button>
-        <div class="login-footer">
-          <button class="login-footer-btn" title="系统设置" onclick="openSettingsModal()">
-            <i class="fa fa-cog"></i>
-          </button>
-        </div>
-      </div>
+  <!-- 用户选择界面（第一次打开时显示） -->
+  <div id="user-select-screen" style="position:fixed; top:0; left:0; right:0; bottom:0; z-index:9999; background:linear-gradient(135deg, #FFE4EC 0%, #FFB6C1 30%, #E91E63 100%); display:flex; align-items:center; justify-content:center; flex-direction:column;">
+    <div style="text-align:center; margin-bottom:32px;">
+      <i class="fa fa-heart" style="font-size:36px; color:#E91E63; margin-bottom:12px; display:block;"></i>
+      <h2 style="font-size:28px; color:#C2185B; font-weight:700; margin-bottom:8px;">时光印记</h2>
+      <p style="font-size:14px; color:#999;">请选择你的身份，开始回忆之旅</p>
     </div>
-  </div>
-
-  <!-- 设置模态框 -->
-  <div class="settings-modal-overlay" id="settings-modal-overlay">
-    <div class="settings-modal">
-      <div class="sm-header">
-        <span class="sm-title"><i class="fa fa-cog" style="margin-right:6px;"></i>系统设置</span>
-        <button class="sm-close" onclick="closeSettingsModal()"><i class="fa fa-times"></i></button>
-      </div>
-      <div class="sm-body">
-        <div class="sm-group">
-          <label>📁 图片文件夹路径</label>
-          <div class="sm-folder-row">
-            <input type="text" class="sm-input" id="sm-root-dir" placeholder="例如：K:\Pictures\照片库">
-            <button class="sm-folder-btn" onclick="selectFolder('sm-root-dir', '图片文件夹')" title="选择文件夹">📁 选择</button>
-          </div>
-        </div>
-        <div class="sm-group">
-          <label>🎵 音乐文件夹路径</label>
-          <div class="sm-folder-row">
-            <input type="text" class="sm-input" id="sm-music-dir" placeholder="例如：K:\Pictures\音乐">
-            <button class="sm-folder-btn" onclick="selectFolder('sm-music-dir', '音乐文件夹')" title="选择文件夹">📁 选择</button>
-          </div>
-        </div>
-        <div class="sm-row">
-          <span class="sm-row-label">隐藏音乐播放器<sub>关闭后底部不显示播放器</sub></span>
-          <button class="sm-toggle" id="sm-hide-player" onclick="this.classList.toggle('on')"></button>
-        </div>
-        <div class="sm-row">
-          <span class="sm-row-label">切换章节自动换歌<sub>进入章节时自动更换背景音乐</sub></span>
-          <button class="sm-toggle on" id="sm-auto-switch" onclick="this.classList.toggle('on')"></button>
-        </div>
-        <div class="sm-row">
-          <span class="sm-row-label">进入页面自动播放<sub>进入后自动开始播放音乐</sub></span>
-          <button class="sm-toggle on" id="sm-auto-play" onclick="this.classList.toggle('on')"></button>
-        </div>
-      </div>
-      <div class="sm-footer">
-        <button class="sm-save-btn" onclick="saveSettingsFromModal()">保存设置</button>
-        <span class="sm-hint" id="sm-hint">✓ 已保存</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- 注册用户模态框 -->
-  <div class="settings-modal-overlay" id="register-modal-overlay" style="display:none;">
-    <div class="settings-modal" style="width:320px;">
-      <div class="sm-header">
-        <span class="sm-title"><i class="fa fa-user-plus" style="margin-right:6px;"></i>注册新用户</span>
-        <button class="sm-close" onclick="closeRegisterModal()"><i class="fa fa-times"></i></button>
-      </div>
-      <div class="sm-body">
-        <div class="sm-group" style="margin-bottom:10px;">
-          <label>用户名</label>
-          <input type="text" class="sm-input" id="register-name" placeholder="请输入用户名" maxlength="20">
-        </div>
-        <p id="register-error" style="font-size:11px; color:#dc2626; display:none; margin:6px 0 0 0;"></p>
-      </div>
-      <div class="sm-footer" style="justify-content:flex-end;">
-        <button class="sm-logout-btn" onclick="closeRegisterModal()" style="padding:6px 14px; font-size:12px;">取消</button>
-        <button class="sm-save-btn" onclick="doRegister()" style="padding:6px 18px; font-size:13px;">创建用户</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 右下角黑胶唱片迷你播放器（始终可见，与完整播放器互斥） -->
-  <div id="vinyl-mini-player" class="vinyl-mini-player" onclick="toggleMusicFromVinyl(event)">
-    <div class="vinyl-disc-wrap">
-      <!-- 黑胶唱片（旋转） -->
-      <div class="vinyl-disc" id="vinyl-disc">
-        <!-- 高光反射 -->
-        <div class="vinyl-highlight"></div>
-        <!-- 中心标签 -->
-        <div class="vinyl-label">
-          <div class="vinyl-label-inner"></div>
-        </div>
-      </div>
-      
-      <!-- 控制按钮（居中在唱片上，常驻显示） -->
-      <div class="vinyl-controls" onclick="event.stopPropagation()">
-        <button class="v-btn" onclick="playPrevMusic()" title="上一首"><i class="fa fa-step-backward"></i></button>
-        <button class="v-btn v-btn-play" onclick="togglePlayPause()" title="播放/暂停"><i class="fa fa-play" id="vinyl-play-icon"></i></button>
-        <button class="v-btn" onclick="playNextMusic()" title="下一首"><i class="fa fa-step-forward"></i></button>
-        <button class="v-btn" onclick="showMusicSettings()" title="播放列表"><i class="fa fa-list"></i></button>
-      </div>
-
-      <!-- 唱臂（固定不转） -->
-      <div class="vinyl-tonearm">
-        <div class="tonearm-pivot"></div>
-        <div class="tonearm-arm"></div>
-        <div class="tonearm-head">
-          <div class="tonearm-head-body"></div>
-          <div class="tonearm-needle"></div>
-        </div>
-      </div>
-    </div>
+    <div id="shell-user-list" style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center; max-width:400px; margin-bottom:24px;"></div>
+    <button onclick="showCreateUserInShell()" style="padding:10px 24px; border-radius:12px; border:1.5px dashed rgba(233,30,99,0.3); background:transparent; color:#E91E63; font-size:14px; cursor:pointer; transition:all 0.2s;">
+      <i class="fa fa-user-plus" style="margin-right:6px;"></i>新建用户
+    </button>
   </div>
 
   <!-- 内容 iframe -->
@@ -693,7 +188,8 @@
       <button class="music-btn play-btn" onclick="togglePlayPause()" id="music-play-btn" title="播放/暂停"><i class="fa fa-play"></i></button>
       <button class="music-btn" onclick="playNextMusic()" title="下一首（随机）"><i class="fa fa-step-forward"></i></button>
       <input type="range" class="music-volume" id="music-volume" min="0" max="100" value="50" oninput="changeMusicVolume(this.value)" title="音量">
-      <button class="music-btn" onclick="showMusicSettings()" title="音乐列表与章节关联"><i class="fa fa-list"></i></button>
+      <button class="music-btn" onclick="showMusicSettings()" title="音乐设置"><i class="fa fa-cog"></i></button>
+      <button class="music-close-btn" onclick="closeMusicPlayer()" title="关闭播放器"><i class="fa fa-times"></i></button>
     </div>
   </div>
 
@@ -990,8 +486,6 @@ function updateMusicUI() {
   var btn = document.getElementById('music-play-btn');
   btn.innerHTML = isMusicPlaying ? '<i class="fa fa-pause"></i>' : '<i class="fa fa-play"></i>';
   document.getElementById('music-name').textContent = currentMusicName || '未播放';
-  // 同步黑胶唱片状态
-  updateVinylSpinState();
 }
 
 function changeMusicVolume(val) {
@@ -1029,6 +523,28 @@ async function showMusicSettings() {
     }
   } catch (e) {}
   document.getElementById('modal-music-settings').classList.add('active');
+}
+
+// 用户登录后加载用户专属音乐设置
+async function loadUserMusicSettings() {
+  try {
+    var res = await fetch('/api/music/settings');
+    var data = await res.json();
+    if (data.ok) {
+      autoSwitch = data.settings.auto_switch !== false;
+      autoPlay = data.settings.auto_play !== false;
+      document.getElementById('music-auto-switch').checked = autoSwitch;
+      document.getElementById('music-auto-play').checked = autoPlay;
+      // 显示音乐播放器
+      showMusicPlayer();
+      // 如果自动播放，且当前没有播放音乐，则开始播放
+      if (autoPlay && !isMusicPlaying && !musicPlayLock && allMusicList.length > 0) {
+        playRandomMusic(true);
+      }
+    }
+  } catch (e) {
+    console.error('加载用户音乐设置失败:', e);
+  }
 }
 
 async function saveMusicSettings() {
@@ -1110,17 +626,9 @@ window.addEventListener('message', function(e) {
     case 'show-music-settings':
       showMusicSettings();
       break;
-    case 'hide-music-player':
-      document.getElementById('music-player').classList.add('hidden');
-      break;
-    case 'show-music-player':
-      document.getElementById('music-player').classList.remove('hidden');
-      break;
-    case 'logout':
-      localStorage.removeItem('autoLoginUserId');
-      fetch('/api/user/logout', { method: 'POST' }).catch(function(){});
-      document.getElementById('start-screen').classList.remove('hidden');
-      loadLoginUserList();
+    case 'user-logged-in':
+      // 用户登录后重新加载音乐设置
+      loadUserMusicSettings();
       break;
     case 'music-cmd':
       switch(msg.cmd) {
@@ -1153,361 +661,77 @@ function handleChapterChange(chapter) {
     });
 }
 
-/* ========== QQ登录界面系统 ========== */
-var loginUsers = [];
+/* ========== 初始化 ========== */
+var userHasSelected = false;
 
-async function checkStartScreen() {
-  // 始终显示用户选择界面
-  loadLoginUserList();
-  // 登录界面：显示唱片播放器，隐藏完整播放器
-  document.getElementById('music-player').classList.add('hidden');
-  document.getElementById('vinyl-mini-player').classList.remove('hidden');
-  // 加载音乐设定
-  await loadMusicSettingsForLogin();
-  return false;
-}
-
-async function loadMusicSettingsForLogin() {
-  try {
-    var res = await fetch('/api/music/settings');
-    var data = await res.json();
-    if (data.ok && data.settings) {
-      autoPlay = data.settings.auto_play !== false;
-      autoSwitch = data.settings.auto_switch !== false;
-    }
-  } catch(e) {}
-}
-
-async function loadMusicSettingsForUser(uid) {
-  try {
-    var res = await fetch('/api/music/settings?user_id=' + encodeURIComponent(uid));
-    var data = await res.json();
-    if (data.ok && data.settings) {
-      autoPlay = data.settings.auto_play !== false;
-      autoSwitch = data.settings.auto_switch !== false;
-      if (data.settings.hide_player) {
-        document.getElementById('music-player').classList.add('hidden');
-        document.getElementById('vinyl-mini-player').classList.remove('hidden');
-      } else {
-        document.getElementById('music-player').classList.remove('hidden');
-        document.getElementById('vinyl-mini-player').classList.add('hidden');
-      }
-    }
-  } catch(e) {}
-}
-
-async function loadLoginUserList() {
+async function loadShellUserList() {
   try {
     var res = await fetch('/api/user/list');
     var data = await res.json();
-    if (data.ok) { 
-      loginUsers = data.users; 
-      renderQuickUsers();
-      renderLoginSelect(); 
+    var container = document.getElementById('shell-user-list');
+    if (data.ok && data.users.length > 0) {
+      container.innerHTML = data.users.map(function(u) {
+        return '<div onclick="selectUserInShell(\'' + u.id + '\', \'' + u.name.replace(/'/g, "\\'") + '\')" style="padding:14px 28px; border-radius:14px; border:1.5px solid rgba(233,30,99,0.2); background:rgba(255,255,255,0.9); cursor:pointer; transition:all 0.2s; text-align:center; min-width:100px;" onmouseover="this.style.borderColor=\'#E91E63\';this.style.background=\'rgba(233,30,99,0.06)\'" onmouseout="this.style.borderColor=\'rgba(233,30,99,0.2)\';this.style.background=\'rgba(255,255,255,0.9)\'">' +
+          '<i class="fa fa-user" style="font-size:20px; color:#E91E63; display:block; margin-bottom:6px;"></i>' +
+          '<span style="font-size:14px; color:#C2185B; font-weight:600;">' + u.name + '</span>' +
+          '</div>';
+      }).join('');
+    } else {
+      container.innerHTML = '';
     }
   } catch(e) {}
 }
 
-function renderQuickUsers() {
-  var container = document.getElementById('quick-users');
-  if (!container) return;
-  // 取最近登录的两个用户（数组前两个）
-  var recentUsers = loginUsers.slice(0, 2);
-  if (recentUsers.length === 0) {
-    container.innerHTML = '';
-    return;
-  }
-  container.innerHTML = recentUsers.map(function(u) {
-    return '<div class="quick-user-card" onclick="quickLogin(\'' + u.id + '\')">' +
-      '<div class="quick-avatar">' + (u.name.charAt(0) || 'U') + '</div>' +
-      '<span class="quick-name">' + u.name + '</span>' +
-    '</div>';
-  }).join('');
-}
-
-function quickLogin(uid) {
-  fetch('/api/user/select', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({user_id: uid}) }).catch(function(){});
-  document.getElementById('start-screen').classList.add('hidden');
-  // 登录后默认显示唱片播放器（与登录界面一致）
-  document.getElementById('music-player').classList.add('hidden');
-  document.getElementById('vinyl-mini-player').classList.remove('hidden');
-  // 加载该用户的音乐设定
-  loadMusicSettingsForUser(uid);
-  // 通知 iframe
-  setTimeout(function() {
-    var frame = document.getElementById('content-frame');
-    if (frame && frame.contentWindow) {
-      frame.contentWindow.postMessage({ type: 'user-logged-in', user_id: uid }, '*');
+async function selectUserInShell(userId, userName) {
+  try {
+    var res = await fetch('/api/user/select', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ user_id: userId })
+    });
+    var data = await res.json();
+    if (data.ok) {
+      // 隐藏用户选择界面
+      document.getElementById('user-select-screen').style.display = 'none';
+      userHasSelected = true;
+      // 显示音乐播放器
+      showMusicPlayer();
+      // 加载用户音乐设置
+      loadUserMusicSettings();
+      // 通知 iframe 用户已登录
+      var frame = document.getElementById('content-frame');
+      if (frame && frame.contentWindow) {
+        frame.contentWindow.postMessage({ type: 'user-logged-in', user_id: userId }, '*');
+      }
     }
-  }, 300);
-  // 根据音乐设定决定是否自动播放
-  if (autoPlay && allMusicList.length > 0) playRandomMusic(true);
+  } catch(e) {}
 }
 
-function renderLoginSelect() {
-  var sel = document.getElementById('login-user-select');
-  sel.innerHTML = '<option value="">-- 请选择 --</option>';
-  loginUsers.forEach(function(u) {
-    sel.innerHTML += '<option value="' + u.id + '">' + u.name + '</option>';
+function showCreateUserInShell() {
+  var name = prompt('请输入用户名：');
+  if (!name || !name.trim()) return;
+  fetch('/api/user/create', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ name: name.trim() })
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    if (data.ok) {
+      // 自动登录新用户
+      selectUserInShell(data.user_id, data.name);
+      // 刷新用户列表
+      loadShellUserList();
+    } else {
+      alert('创建失败：' + (data.error || '未知错误'));
+    }
+  })
+  .catch(function() {
+    alert('网络错误，创建失败');
   });
 }
 
-function onLoginSelectChange() {
-  var sel = document.getElementById('login-user-select');
-  document.getElementById('btn-login').disabled = !sel.value;
-}
-
-document.getElementById('login-user-select').addEventListener('change', onLoginSelectChange);
-
-function showRegisterModal() {
-  document.getElementById('register-name').value = '';
-  document.getElementById('register-error').style.display = 'none';
-  document.getElementById('register-modal-overlay').style.display = 'flex';
-  setTimeout(function() { document.getElementById('register-name').focus(); }, 100);
-}
-
-function closeRegisterModal() {
-  document.getElementById('register-modal-overlay').style.display = 'none';
-}
-
-function doRegister() {
-  var name = document.getElementById('register-name').value.trim();
-  if (!name) {
-    var err = document.getElementById('register-error');
-    err.textContent = '请输入用户名';
-    err.style.display = 'block';
-    return;
-  }
-  // 检查用户名是否重复
-  var exists = loginUsers.some(function(u) { return u.name === name; });
-  if (exists) {
-    var err = document.getElementById('register-error');
-    err.textContent = '用户名 "' + name + '" 已存在，请使用其他名字。';
-    err.style.display = 'block';
-    return;
-  }
-  fetch('/api/user/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name: name}) })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data.ok) {
-        closeRegisterModal();
-        loadLoginUserList().then(function() {
-          document.getElementById('login-user-select').value = data.user_id;
-          onLoginSelectChange();
-        });
-      } else {
-        var err = document.getElementById('register-error');
-        err.textContent = data.error || '创建失败';
-        err.style.display = 'block';
-      }
-    }).catch(function() {
-      var err = document.getElementById('register-error');
-      err.textContent = '网络错误';
-      err.style.display = 'block';
-    });
-}
-
-async function doLogin() {
-  var uid = document.getElementById('login-user-select').value;
-  if (!uid) return;
-  try { await fetch('/api/user/select', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({user_id: uid}) }); } catch(e) {}
-  document.getElementById('start-screen').classList.add('hidden');
-  // 登录后默认显示唱片播放器
-  document.getElementById('music-player').classList.add('hidden');
-  document.getElementById('vinyl-mini-player').classList.remove('hidden');
-  // 加载该用户的音乐设定
-  loadMusicSettingsForUser(uid);
-  // 通知 iframe 刷新用户信息
-  setTimeout(function() {
-    var frame = document.getElementById('content-frame');
-    if (frame && frame.contentWindow) {
-      frame.contentWindow.postMessage({ type: 'user-logged-in', user_id: uid }, '*');
-    }
-  }, 300);
-  if (!isMusicPlaying && autoPlay && allMusicList.length > 0) playRandomMusic(true);
-}
-
-function selectFolder(inputId, title) {
-  var input = document.getElementById(inputId);
-  if (!input) return;
-  var inputElem = document.createElement('input');
-  inputElem.type = 'file';
-  inputElem.webkitdirectory = true;
-  inputElem.directory = true;
-  inputElem.onchange = function(e) {
-    if (e.target.files && e.target.files.length > 0) {
-      var firstFile = e.target.files[0];
-      var pathParts = firstFile.webkitRelativePath.split('/');
-      if (pathParts.length > 1) {
-        input.value = pathParts[0];
-      }
-    }
-  };
-  inputElem.click();
-}
-
-/* ========== 设置模态框 ========== */
-function openSettingsModal() {
-  loadSettingsToModal();
-  document.getElementById('settings-modal-overlay').classList.add('show');
-}
-
-function closeSettingsModal() {
-  document.getElementById('settings-modal-overlay').classList.remove('show');
-}
-
-async function loadSettingsToModal() {
-  try {
-    var res = await fetch('/api/settings');
-    var d = await res.json();
-    if (d.root_dir) document.getElementById('sm-root-dir').value = d.root_dir;
-    if (d.music_dir) document.getElementById('sm-music-dir').value = d.music_dir;
-  } catch(e) {}
-  try {
-    var userRes = await fetch('/api/user/current');
-    var userData = await userRes.json();
-    var uid = userData.ok && userData.user ? userData.user.id : null;
-    var url = uid ? '/api/music/settings?user_id=' + encodeURIComponent(uid) : '/api/music/settings';
-    var res2 = await fetch(url);
-    var d2 = await res2.json();
-    if (d2.ok && d2.settings) {
-      setModalToggle('sm-auto-switch', d2.settings.auto_switch !== false);
-      setModalToggle('sm-auto-play', d2.settings.auto_play !== false);
-      setModalToggle('sm-hide-player', d2.settings.hide_player === true);
-    }
-  } catch(e) {}
-  if (!document.querySelector('#sm-hide-player.on') && !document.querySelector('#sm-hide-player:not(.on)')) {
-    setModalToggle('sm-hide-player', document.getElementById('music-player').classList.contains('hidden'));
-  }
-}
-
-function setModalToggle(id, val) {
-  var el = document.getElementById(id);
-  if (val) el.classList.add('on'); else el.classList.remove('on');
-}
-
-async function saveSettingsFromModal() {
-  var rootDir = document.getElementById('sm-root-dir').value.trim();
-  var musicDir = document.getElementById('sm-music-dir').value.trim();
-  var hidePlayer = document.getElementById('sm-hide-player').classList.contains('on');
-  var as = document.getElementById('sm-auto-switch').classList.contains('on');
-  var ap = document.getElementById('sm-auto-play').classList.contains('on');
-
-  try { await fetch('/api/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({root_dir:rootDir, music_dir:musicDir}) }); } catch(e) {}
-  try {
-    var userRes = await fetch('/api/user/current');
-    var userData = await userRes.json();
-    var uid = userData.ok && userData.user ? userData.user.id : null;
-    var body = { settings: { auto_switch: as, auto_play: ap, hide_player: hidePlayer } };
-    if (uid) body.user_id = uid;
-    await fetch('/api/music/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-  } catch(e) {}
-
-  autoSwitch = as; autoPlay = ap;
-  if (hidePlayer) {
-    document.getElementById('music-player').classList.add('hidden');
-    document.getElementById('vinyl-mini-player').classList.remove('hidden');
-  } else {
-    document.getElementById('music-player').classList.remove('hidden');
-    document.getElementById('vinyl-mini-player').classList.add('hidden');
-  }
-
-  var hint = document.getElementById('sm-hint'); hint.classList.add('show');
-  setTimeout(function() { 
-    hint.classList.remove('show');
-    closeSettingsModal();
-  }, 1500);
-}
-
-function doLogoutFromModal() {
-  closeSettingsModal();
-  fetch('/api/user/logout', { method: 'POST' }).catch(function(){});
-  document.getElementById('start-screen').classList.remove('hidden');
-  loadLoginUserList();
-  document.getElementById('login-user-select').value = '';
-  document.getElementById('btn-login').disabled = true;
-  // 切换到唱片播放器
-  document.getElementById('music-player').classList.add('hidden');
-  document.getElementById('vinyl-mini-player').classList.remove('hidden');
-}
-
-function doLogout() {
-  fetch('/api/user/logout', { method: 'POST' }).catch(function(){});
-  document.getElementById('start-screen').classList.remove('hidden');
-  loadLoginUserList();
-  document.getElementById('login-user-select').value = '';
-  document.getElementById('btn-login').disabled = true;
-  // 切换到唱片播放器
-  document.getElementById('music-player').classList.add('hidden');
-  document.getElementById('vinyl-mini-player').classList.remove('hidden');
-}
-
-function toggleMusicOnLoginScreen() {
-  var player = document.getElementById('music-player');
-  var vinyl = document.getElementById('vinyl-mini-player');
-  if (player.classList.contains('hidden')) {
-    // 显示完整播放器，隐藏唱片
-    player.classList.remove('hidden');
-    vinyl.classList.add('hidden');
-  } else {
-    // 隐藏完整播放器，显示唱片
-    player.classList.add('hidden');
-    vinyl.classList.remove('hidden');
-  }
-}
-
-function toggleMusicFromVinyl(e) {
-  if (e.target.closest('.vinyl-controls')) return;
-  var player = document.getElementById('music-player');
-  var vinyl = document.getElementById('vinyl-mini-player');
-  if (player.classList.contains('hidden')) {
-    // 显示完整播放器，隐藏唱片
-    player.classList.remove('hidden');
-    vinyl.classList.add('hidden');
-  } else {
-    // 隐藏完整播放器，显示唱片
-    player.classList.add('hidden');
-    vinyl.classList.remove('hidden');
-  }
-}
-
-function updateVinylSpinState() {
-  var disc = document.getElementById('vinyl-disc');
-  var icon = document.getElementById('vinyl-play-icon');
-  if (!disc || !icon) return;
-  if (isMusicPlaying) {
-    disc.classList.add('spinning');
-    icon.className = 'fa fa-pause';
-  } else {
-    disc.classList.remove('spinning');
-    icon.className = 'fa fa-play';
-  }
-}
-
-/* ========== 章节切换音乐逻辑（参考音乐播放逻辑.md） ========== */
-function handleChapterChange(chapter) {
-  if (!autoSwitch || !allMusicList.length) return;
-  fetch('/api/chapter/music?chapter=' + encodeURIComponent(chapter))
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      var hasDedicated = data.ok && data.music;
-      if (hasDedicated) {
-        if (currentMusicName !== data.music) {
-          playSpecificMusic(data.music, autoPlay);
-        }
-      } else {
-        playRandomMusic(autoPlay);
-      }
-    }).catch(function() {
-      playRandomMusic(autoPlay);
-    });
-}
-
-/* ========== 初始化 ========== */
-
 async function init() {
-  var hasUser = await checkStartScreen();
-
   var savedVolume = localStorage.getItem('musicVolume');
   if (savedVolume) {
     document.getElementById('music-volume').value = savedVolume;
@@ -1515,11 +739,11 @@ async function init() {
   } else {
     bgmAudio.volume = 0.5;
   }
-
   await loadMusicList();
-  showMusicPlayer();
+  // 默认隐藏音乐播放器，等用户登录后再显示
+  document.getElementById('music-player').classList.add('hidden');
   updateMusicUI();
-  if (allMusicList.length === 0 || !hasUser) return;
+  if (allMusicList.length === 0) return;
 
   try {
     var res = await fetch('/api/music/settings');
@@ -1531,6 +755,9 @@ async function init() {
       document.getElementById('music-auto-play').checked = autoPlay;
     }
   } catch(e) {}
+
+  // 加载用户列表
+  loadShellUserList();
 
   if (autoPlay) { playRandomMusic(true); }
 }

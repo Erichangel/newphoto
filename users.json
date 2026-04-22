@@ -2,13 +2,14 @@
   "0a49e941": {
     "name": "老公",
     "created_at": "2026-04-18 07:13:36",
-    "last_chapter": "2016.03雍和宫还愿",
-    "scroll_position": 0
+    "last_chapter": "2016.11",
+    "scroll_position": 0,
+    "last_login": "2026-04-22 11:40:28"
   },
-  "a7fab235": {
-    "name": "测试",
-    "created_at": "2026-04-21 08:03:26",
-    "last_chapter": null,
+  "f207bb01": {
+    "name": "老婆",
+    "created_at": "2026-04-22 16:41:23",
+    "last_chapter": "2016.01哈尔滨",
     "scroll_position": 0
   }
 }

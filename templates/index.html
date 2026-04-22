@@ -464,7 +464,7 @@
       background: rgba(233, 30, 99, 0.15);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
-      z-index: 100;
+      z-index: 600;
       display: none;
       align-items: center;
       justify-content: center;
@@ -1039,54 +1039,15 @@
 
   <!-- 设置弹窗 -->
   <div id="modal-settings" class="modal-overlay" onclick="if(event.target===this)closeModals()">
-    <div class="modal-box" style="max-width:420px;">
-      <h3><i class="fa fa-cog" style="color: #E91E63; margin-right: 6px;"></i>系统设置</h3>
-      
-      <label>📁 图片文件夹路径</label>
-      <div style="display:flex; gap:8px; margin-bottom:12px;">
-        <input type="text" id="settings-root-dir" placeholder="例如：K:\Pictures\照片库" style="flex:1;">
-        <button onclick="selectFolder('settings-root-dir')" class="modal-btn modal-btn-confirm" style="padding:8px 14px; font-size:13px;">
-          <i class="fa fa-folder-open" style="margin-right:4px;"></i>选择
-        </button>
+    <div class="modal-box">
+      <h3><i class="fa fa-cog" style="color: #E91E63; margin-right: 6px;"></i>设置</h3>
+      <label>照片根目录</label>
+      <input type="text" id="settings-dir" placeholder="例如：K:\Pictures\照片库">
+      <p class="modal-hint">修改后需刷新页面生效</p>
+      <div class="modal-actions">
+        <button onclick="closeModals()" class="modal-btn modal-btn-cancel">取消</button>
+        <button onclick="saveSettings()" class="modal-btn modal-btn-confirm">保存</button>
       </div>
-      
-      <label>🎵 音乐文件夹路径</label>
-      <div style="display:flex; gap:8px;">
-        <input type="text" id="settings-music-dir" placeholder="例如：K:\Pictures\音乐" style="flex:1;">
-        <button onclick="selectFolder('settings-music-dir')" class="modal-btn modal-btn-confirm" style="padding:8px 14px; font-size:13px;">
-          <i class="fa fa-folder-open" style="margin-right:4px;"></i>选择
-        </button>
-      </div>
-      
-      <div style="margin-top:16px; padding:12px; background:rgba(233,30,99,0.05); border-radius:8px;">
-        <label style="display:flex; align-items:center; cursor:pointer; margin-bottom:10px;">
-          <input type="checkbox" id="settings-hide-player" style="margin-right:8px; accent-color:#E91E63;">
-          <span style="font-size:13px; color:#555;">隐藏音乐播放器</span>
-        </label>
-        <p style="font-size:11px; color:#999; margin:0;">勾选后底部不显示音乐播放器</p>
-      </div>
-      
-      <div style="margin-top:16px; padding:12px; background:rgba(233,30,99,0.05); border-radius:8px;">
-        <label style="display:flex; align-items:center; cursor:pointer; margin-bottom:10px;">
-          <input type="checkbox" id="settings-auto-switch" checked style="margin-right:8px; accent-color:#E91E63;">
-          <span style="font-size:13px; color:#555;">切换章节自动换歌</span>
-        </label>
-        <p style="font-size:11px; color:#999; margin:0 0 8px 0;">进入章节时自动更换背景音乐</p>
-        
-        <label style="display:flex; align-items:center; cursor:pointer;">
-          <input type="checkbox" id="settings-auto-play" checked style="margin-right:8px; accent-color:#E91E63;">
-          <span style="font-size:13px; color:#555;">进入页面自动播放</span>
-        </label>
-        <p style="font-size:11px; color:#999; margin:0;">进入页面后自动开始播放音乐</p>
-      </div>
-      
-      <div class="modal-actions" style="margin-top:20px;">
-        <button onclick="doLogoutFromIframe()" class="modal-btn modal-btn-cancel" style="background:#fef2f2; color:#dc2626; border-color:#fee2e2;">
-          <i class="fa fa-sign-out" style="margin-right:4px;"></i>退出登录
-        </button>
-        <button onclick="saveSettingsFromIframe()" class="modal-btn modal-btn-confirm">保存设置</button>
-      </div>
-      <p class="modal-hint" id="settings-saved-hint" style="display:none; color:#4CAF50; margin-top:8px;">✓ 已保存</p>
     </div>
   </div>
 
@@ -1603,17 +1564,6 @@
       });
     }
 
-    async function initUserSystem() {
-      const res = await fetch('/api/user/current');
-      const data = await res.json();
-      if (data.ok && data.user) {
-        currentUserId = data.user.id;
-        document.getElementById('current-user-name').textContent = data.user.name;
-        loadUserLastChapter();
-      }
-      loadUserList();
-    }
-
     async function loadUserLastChapter() {
       const res = await fetch('/api/user/last-chapter');
       const data = await res.json();
@@ -1641,20 +1591,19 @@
       if (!targetNode) return;
       setTimeout(function() {
         targetNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        document.querySelectorAll('.last-view-label').forEach(function(el) { el.remove(); });
-        var chapterNameEl = targetNode.querySelector('.chapter-name');
-        if (!chapterNameEl) return;
-        var label = document.createElement('div');
-        label.className = 'last-view-label';
-        label.innerHTML = '<i class="fa fa-bookmark" style="margin-right:4px;"></i>上次观看到这里';
-        label.style.cssText = 'position:absolute; left:50%; transform:translateX(-50%); background:linear-gradient(135deg,#E91E63,#FF6090); color:white; font-size:11px; padding:4px 14px; border-radius:10px; white-space:nowrap; box-shadow:0 2px 12px rgba(233,30,99,0.35); z-index:15; font-weight:500;';
-        targetNode.appendChild(label);
-        setTimeout(function() {
-          var nodeRect = targetNode.getBoundingClientRect();
-          var nameRect = chapterNameEl.getBoundingClientRect();
-          var labelTop = nameRect.top - nodeRect.top - (label.offsetHeight / 2) + (nameRect.offsetHeight / 2);
-          label.style.top = labelTop + 'px';
-        }, 50);
+        var indicator = document.createElement('div');
+        indicator.className = 'last-view-indicator';
+        indicator.innerHTML = '<i class="fa fa-bookmark" style="margin-right:4px;"></i>上次观看到这里';
+        indicator.style.cssText = 'position:absolute; top:-28px; left:50%; transform:translateX(-50%); background:linear-gradient(135deg,#E91E63,#FF6090); color:white; font-size:11px; padding:3px 12px; border-radius:10px; white-space:nowrap; box-shadow:0 2px 8px rgba(233,30,99,0.3); z-index:10; animation:lastViewPulse 2s ease-in-out infinite;';
+        targetNode.style.position = 'relative';
+        targetNode.appendChild(indicator);
+        var style = document.getElementById('last-view-style');
+        if (!style) {
+          style = document.createElement('style');
+          style.id = 'last-view-style';
+          style.textContent = '@keyframes lastViewPulse { 0%,100%{opacity:1;transform:translateX(-50%) translateY(0)} 50%{opacity:0.7;transform:translateX(-50%) translateY(-3px)} }';
+          document.head.appendChild(style);
+        }
       }, 300);
     }
 
@@ -1696,10 +1645,11 @@
         currentUserId = userId;
         document.getElementById('current-user-name').textContent = userName;
         document.getElementById('user-menu').style.display = 'none';
-        hideUserSelectOverlay();
         loadUserLastChapter();
         loadUserList();
         toast('已切换到用户：' + userName);
+        // 通知 shell 加载用户音乐设置
+        window.parent.postMessage({ type: 'user-logged-in', user_id: userId }, '*');
       } else {
         toast(data.error || '切换失败', true);
       }
@@ -1730,10 +1680,13 @@
         currentUserId = data.user_id;
         document.getElementById('current-user-name').textContent = data.name;
         closeModals();
-        hideUserSelectOverlay();
         loadUserList();
+        // 新用户没有浏览记录，btnContinue 应该隐藏
+        document.getElementById('btn-continue').style.display = 'none';
         loadUserLastChapter();
         toast('用户创建成功：' + data.name);
+        // 通知 shell 加载用户音乐设置
+        window.parent.postMessage({ type: 'user-logged-in', user_id: data.user_id }, '*');
       } else {
         toast(data.error || '创建失败', true);
       }
@@ -1783,7 +1736,7 @@
       closeModals();
       document.getElementById('modal-' + type).classList.add('active');
       if (type === 'settings') {
-        loadSettingsModal();
+        document.getElementById('settings-dir').value = '{{ root_dir }}';
       }
       if (type === 'create') {
         initChapterYearMonth();
@@ -1922,93 +1875,27 @@
       else toast(data.error || '失败', true);
     }
 
-    /* ========== iframe 内设置面板函数 ========== */
-    async function loadSettingsModal() {
-      try {
-        var res = await fetch('/api/settings');
-        var d = await res.json();
-        if (d.root_dir) document.getElementById('settings-root-dir').value = d.root_dir;
-        if (d.music_dir) document.getElementById('settings-music-dir').value = d.music_dir;
-      } catch(e) {}
-      try {
-        var res2 = await fetch('/api/music/settings');
-        var d2 = await res2.json();
-        if (d2.ok && d2.settings) {
-          document.getElementById('settings-auto-switch').checked = d2.settings.auto_switch !== false;
-          document.getElementById('settings-auto-play').checked = d2.settings.auto_play !== false;
+    // 监听 shell 的用户登录消息
+    window.addEventListener('message', function(e) {
+      var msg = e.data;
+      if (!msg || msg.type !== 'user-logged-in') return;
+      // 用户已登录，加载用户信息
+      currentUserId = msg.user_id;
+      fetch('/api/user/current').then(function(res) { return res.json(); }).then(function(data) {
+        if (data.ok && data.user) {
+          document.getElementById('current-user-name').textContent = data.user.name;
+          loadUserLastChapter();
         }
-      } catch(e) {}
-    }
-
-    function selectFolder(inputId) {
-      // 创建一个隐藏的 input[type=file] 来选择文件夹
-      var input = document.createElement('input');
-      input.type = 'file';
-      input.webkitdirectory = true;
-      input.mozdirectory = true;
-      input.directory = true;
-      input.style.display = 'none';
-      input.onchange = function(e) {
-        if (e.target.files && e.target.files.length > 0) {
-          // 获取选中文件的目录路径
-          var path = e.target.files[0].webkitRelativePath;
-          // 提取根目录（第一个 / 之前的部分）
-          var rootPath = path.split('/')[0];
-          // 显示提示，说明已选择
-          document.getElementById(inputId).value = '已选择文件夹：' + rootPath + '（请手动输入完整路径）';
-        }
-      };
-      document.body.appendChild(input);
-      input.click();
-      document.body.removeChild(input);
-    }
-
-    async function saveSettingsFromIframe() {
-      var rootDir = document.getElementById('settings-root-dir').value.trim();
-      var musicDir = document.getElementById('settings-music-dir').value.trim();
-      var hidePlayer = document.getElementById('settings-hide-player').checked;
-      var autoSwitch = document.getElementById('settings-auto-switch').checked;
-      var autoPlay = document.getElementById('settings-auto-play').checked;
-
-      try { await fetch('/api/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({root_dir:rootDir, music_dir:musicDir}) }); } catch(e) {}
-      try { await fetch('/api/music/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({settings:{auto_switch:autoSwitch, auto_play:autoPlay}}) }); } catch(e) {}
-
-      // 通知父窗口隐藏/显示播放器
-      if (isInIframe || isIframeMode) {
-        parent.postMessage({ type: hidePlayer ? 'hide-music-player' : 'show-music-player' }, '*');
-      }
-
-      var hint = document.getElementById('settings-saved-hint');
-      hint.style.display = 'block';
-      setTimeout(function() { hint.style.display = 'none'; }, 2000);
-    }
-
-    function doLogoutFromIframe() {
-      fetch('/api/user/logout', { method: 'POST' }).catch(function(){});
-      // 通知父窗口退出登录
-      if (isInIframe || isIframeMode) {
-        parent.postMessage({ type: 'logout' }, '*');
-      }
-      closeModals();
-    }
+      }).catch(function(){});
+    });
 
     /* ========== 滚动淡入动画 (IntersectionObserver) ========== */
     // DOM 初始化（立即执行，不依赖 DOMContentLoaded）
-    initUserSystem();
+    // 从 shell 获取用户信息（通过 postMessage）
     initYearFilter();
     if (!isInIframe && !isIframeMode) initMusicSystem();
     restoreScrollPosition();
     checkLastChapter();
-
-    // 监听父窗口登录消息
-    window.addEventListener('message', function(e) {
-      var msg = e.data;
-      if (!msg || !msg.type) return;
-      if (msg.type === 'user-logged-in') {
-        // 重新加载用户信息
-        initUserSystem();
-      }
-    });
 
     // 滚动动画
     const nodes = document.querySelectorAll('.timeline-node');

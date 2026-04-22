@@ -3,7 +3,8 @@
     "2015.11北科秋景+天津滑雪": "100爱转角-罗志祥.mp3"
   },
   "settings": {
-    "auto_switch": false,
-    "auto_play": true
+    "auto_switch": true,
+    "auto_play": true,
+    "hide_player": true
   }
 }
