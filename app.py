@@ -44,6 +44,9 @@ os.makedirs(THUMB_DIR, exist_ok=True)
 
 # 用户数据文件
 USER_DATA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'users.json')
+# 用户独立音乐设置目录
+USER_MUSIC_SETTINGS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'user_settings')
+os.makedirs(USER_MUSIC_SETTINGS_DIR, exist_ok=True)
 
 def load_users():
     """加载用户数据"""
@@ -396,6 +399,24 @@ def save_music_config(config):
     with open(MUSIC_CONFIG_FILE, 'w', encoding='utf-8') as f:
         json.dump(config, f, ensure_ascii=False, indent=2)
 
+def get_user_music_settings_file(user_id):
+    """获取用户独立音乐设置文件路径"""
+    return os.path.join(USER_MUSIC_SETTINGS_DIR, f'{user_id}_music.json')
+
+def load_user_music_settings(user_id):
+    """加载指定用户的音乐设置"""
+    fpath = get_user_music_settings_file(user_id)
+    if os.path.exists(fpath):
+        with open(fpath, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return {'auto_switch': True, 'auto_play': True, 'hide_player': False}
+
+def save_user_music_settings(user_id, settings):
+    """保存指定用户的音乐设置"""
+    fpath = get_user_music_settings_file(user_id)
+    with open(fpath, 'w', encoding='utf-8') as f:
+        json.dump(settings, f, ensure_ascii=False, indent=2)
+
 def get_music_list():
     """获取音乐文件夹中的所有音频文件"""
     musics = []
@@ -476,14 +497,26 @@ def api_chapter_music():
 
 @app.route('/api/music/settings', methods=['GET', 'POST'])
 def api_music_settings():
-    """获取/修改音乐播放设置"""
-    config = load_music_config()
+    """获取/修改音乐播放设置（支持按用户独立存储）"""
+    user_id = request.args.get('user_id') or (request.json or {}).get('user_id') or get_current_user()
     if request.method == 'GET':
-        return jsonify({'ok': True, 'settings': config.get('settings', {'auto_switch': True})})
+        if user_id:
+            settings = load_user_music_settings(user_id)
+        else:
+            config = load_music_config()
+            settings = config.get('settings', {'auto_switch': True})
+        return jsonify({'ok': True, 'settings': settings})
     elif request.method == 'POST':
         settings = request.json.get('settings', {})
-        config.setdefault('settings', {}).update(settings)
-        save_music_config(config)
+        post_user_id = request.json.get('user_id') or user_id
+        if post_user_id:
+            existing = load_user_music_settings(post_user_id)
+            existing.update(settings)
+            save_user_music_settings(post_user_id, existing)
+        else:
+            config = load_music_config()
+            config.setdefault('settings', {}).update(settings)
+            save_music_config(config)
         return jsonify({'ok': True})
 
 
@@ -498,7 +531,7 @@ def shell():
 def home():
     """首页内容 - 章节列表（在 iframe 中加载）"""
     chapters = get_chapters()
-    version_ts = '04/19 14:30'
+    version_ts = '04/22 06:00'
     return render_template('index.html', chapters=chapters, root_dir=ROOT_DIR, version_ts=version_ts, is_iframe=True)
 
 @app.route('/chapter/<path:name>')
@@ -634,12 +667,19 @@ def api_select_user():
     user_id = request.json.get('user_id')
     if not user_id:
         return jsonify({'error': '用户 ID 不能为空'}), 400
-    
+
     users = load_users()
     if user_id not in users:
         return jsonify({'error': '用户不存在'}), 404
-    
+
     set_current_user(user_id)
+    return jsonify({'ok': True})
+
+@app.route('/api/user/logout', methods=['POST'])
+def api_logout():
+    """退出登录（清除 session）"""
+    from flask import session
+    session.pop('user_id', None)
     return jsonify({'ok': True})
 
 @app.route('/api/user/current', methods=['GET'])
@@ -1161,33 +1201,45 @@ def api_save_article():
 
 @app.route('/api/settings', methods=['GET', 'POST'])
 def api_settings():
-    """获取/修改根目录设置"""
-    global ROOT_DIR, chapter_cache
+    """获取/修改根目录和音乐目录设置"""
+    global ROOT_DIR, MUSIC_DIR, chapter_cache
     if request.method == 'GET':
-        return jsonify({'root_dir': ROOT_DIR})
-    new_dir = request.json.get('root_dir', '').strip()
-    if new_dir and os.path.isdir(new_dir):
-        ROOT_DIR = new_dir
-        # 保存到配置文件
+        return jsonify({'root_dir': ROOT_DIR, 'music_dir': MUSIC_DIR})
+    root_dir = request.json.get('root_dir', '').strip()
+    music_dir = request.json.get('music_dir', '').strip()
+    changed = False
+    if root_dir and os.path.isdir(root_dir):
+        ROOT_DIR = root_dir
         with open(os.path.join(os.path.dirname(__file__), 'config.txt'), 'w') as f:
             f.write(ROOT_DIR)
-        # 清除缓存
+        changed = True
+    if music_dir and os.path.isdir(music_dir):
+        MUSIC_DIR = music_dir
+        with open(os.path.join(os.path.dirname(__file__), 'music_config.txt'), 'w') as f:
+            f.write(MUSIC_DIR)
+        changed = True
+    if changed:
         chapter_cache = {}
-        return jsonify({'ok': True, 'root_dir': ROOT_DIR})
-    return jsonify({'error': '目录不存在'}), 400
+    return jsonify({'ok': True, 'root_dir': ROOT_DIR, 'music_dir': MUSIC_DIR})
 
 
 # ============ 启动 ============
 
 def load_config():
-    """从 config.txt 加载根目录"""
-    global ROOT_DIR
+    """从 config.txt 加载根目录，从 music_config.txt 加载音乐目录"""
+    global ROOT_DIR, MUSIC_DIR
     cfg = os.path.join(os.path.dirname(__file__), 'config.txt')
     if os.path.exists(cfg):
         with open(cfg, 'r') as f:
             d = f.read().strip()
             if os.path.isdir(d):
                 ROOT_DIR = d
+    mcfg = os.path.join(os.path.dirname(__file__), 'music_config.txt')
+    if os.path.exists(mcfg):
+        with open(mcfg, 'r') as f:
+            d = f.read().strip()
+            if os.path.isdir(d):
+                MUSIC_DIR = d
 
 if __name__ == '__main__':
     load_config()
