@@ -22,7 +22,7 @@
       bottom: 0;
       left: 0;
       right: 0;
-      z-index: 180;
+      z-index: 100;
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
@@ -114,7 +114,7 @@
     /* 音乐设置弹窗 */
     .modal-overlay {
       display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.4); z-index: 1000;
+      background: rgba(0,0,0,0.4); z-index: 10001;
       justify-content: center; align-items: center;
     }
     .modal-overlay.active { display: flex; }
@@ -193,6 +193,33 @@
     </div>
   </div>
 
+  <!-- 新建用户弹窗 -->
+  <div id="modal-create-user-shell" class="modal-overlay" onclick="if(event.target===this)closeCreateUserModal()">
+    <div class="modal-box" style="max-width:360px;">
+      <h3><i class="fa fa-user-plus" style="color: #E91E63; margin-right: 6px;"></i>新建用户</h3>
+      <label>用户名</label>
+      <input type="text" id="shell-create-user-name" placeholder="输入用户名" maxlength="20" style="width:100%; padding:10px 14px; border:1.5px solid rgba(233,30,99,0.2); border-radius:8px; font-size:14px; box-sizing:border-box; margin-bottom:12px;" onkeydown="if(event.key==='Enter')confirmCreateUserInShell()">
+      <div class="modal-actions">
+        <button onclick="closeCreateUserModal()" class="modal-btn modal-btn-cancel">取消</button>
+        <button onclick="confirmCreateUserInShell()" class="modal-btn modal-btn-confirm">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 删除用户确认弹窗 -->
+  <div id="modal-delete-user-shell" class="modal-overlay" onclick="if(event.target===this)closeDeleteUserModal()">
+    <div class="modal-box" style="max-width:400px;">
+      <h3><i class="fa fa-exclamation-triangle" style="color: #dc2626; margin-right: 6px;"></i>删除用户确认</h3>
+      <p style="font-size:14px; color:#555; margin-bottom:8px;">确定要删除用户 "<span id="shell-delete-user-name" style="font-weight:600; color:#C2185B;"></span>" 吗？</p>
+      <p class="modal-hint" style="color:#dc2626; margin-top:12px;">删除后将清除该用户的观看记录和音乐设置，此操作不可恢复！</p>
+      <input type="hidden" id="shell-delete-user-id">
+      <div class="modal-actions">
+        <button onclick="closeDeleteUserModal()" class="modal-btn modal-btn-cancel">取消</button>
+        <button onclick="executeDeleteUser()" class="modal-btn modal-btn-confirm" style="background:linear-gradient(135deg, #dc2626, #ef4444);">确认删除</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 音乐设置弹窗 -->
   <div id="modal-music-settings" class="modal-overlay" onclick="if(event.target===this)closeModals()">
     <div class="modal-box" style="max-width:480px;">
@@ -213,8 +240,12 @@
         </label>
         <span style="font-size:11px; color:#aaa;">开启后，进入页面自动开始播放音乐</span>
       </div>
-      <label>当前章节指定音乐</label>
-      <div id="chapter-music-select-area" style="margin-bottom:4px;">
+      <label>为章节指定专属音乐</label>
+      <div style="margin-bottom:10px;">
+        <select id="chapter-select-for-music" onchange="onChapterSelectForMusicChange()" style="width:100%; padding:8px 12px; border:1.5px solid rgba(233,30,99,0.2); border-radius:8px; font-size:13px; margin-bottom:8px; color:#333;">
+          <option value="home">首页</option>
+          <option value="login">用户选择页</option>
+        </select>
         <div class="chapter-music-row">
           <select id="chapter-music-select"><option value="">随机播放</option></select>
           <button onclick="saveChapterMusic()">保存</button>
@@ -244,6 +275,7 @@ var musicPlayLock = false;
 var autoSwitch = true;
 var autoPlay = true;
 var currentChapter = '';
+var currentUserId = null;
 
 var bgmAudio = document.getElementById('bgm-audio');
 var contentFrame = document.getElementById('content-frame');
@@ -522,7 +554,63 @@ async function showMusicSettings() {
       document.getElementById('music-auto-play').checked = autoPlay;
     }
   } catch (e) {}
+  
+  // 加载章节列表
+  loadChaptersForMusicSelect();
+  
   document.getElementById('modal-music-settings').classList.add('active');
+}
+
+async function loadChaptersForMusicSelect() {
+  var chapterSelect = document.getElementById('chapter-select-for-music');
+  try {
+    var res = await fetch('/api/chapters');
+    var data = await res.json();
+    if (data.ok && data.chapters) {
+      // 保留"首页"和"用户选择页"选项
+      var existingOptions = '';
+      if (chapterSelect.options.length > 0 && chapterSelect.options[0].value === 'home') {
+        existingOptions = '<option value="home">首页</option><option value="login">用户选择页</option>';
+      }
+      // 添加章节列表
+      var chapterOptions = data.chapters.map(function(ch) {
+        return '<option value="' + ch.name + '">' + ch.year + ' - ' + ch.name + '</option>';
+      }).join('');
+      chapterSelect.innerHTML = existingOptions + chapterOptions;
+      // 默认选中首页
+      chapterSelect.value = 'home';
+      // 加载首页的音乐设置
+      onChapterSelectForMusicChange();
+    }
+  } catch (e) {}
+}
+
+async function onChapterSelectForMusicChange() {
+  var chapter = document.getElementById('chapter-select-for-music').value;
+  var musicSelect = document.getElementById('chapter-music-select');
+  var statusSpan = document.getElementById('chapter-music-status');
+  
+  // 重置音乐下拉框
+  musicSelect.innerHTML = '<option value="">随机播放</option>';
+  
+  try {
+    var res = await fetch('/api/chapter/music?chapter=' + encodeURIComponent(chapter));
+    var data = await res.json();
+    if (data.ok) {
+      if (data.music) {
+        // 该章节有专属音乐，选中它
+        musicSelect.innerHTML = '<option value="">随机播放</option>' +
+          allMusicList.map(function(m) {
+            return '<option value="' + m.name + '"' + (m.name === data.music ? ' selected' : '') + '>' + m.name + '</option>';
+          }).join('');
+        statusSpan.textContent = '已为该章节指定音乐';
+      } else {
+        statusSpan.textContent = '该章节使用随机播放';
+      }
+    }
+  } catch (e) {
+    statusSpan.textContent = '加载失败';
+  }
 }
 
 // 用户登录后加载用户专属音乐设置
@@ -560,19 +648,26 @@ async function saveMusicSettings() {
 }
 
 function saveChapterMusic() {
+  var chapter = document.getElementById('chapter-select-for-music').value;
   var music = document.getElementById('chapter-music-select').value;
-  if (!currentChapter) return;
+  var statusSpan = document.getElementById('chapter-music-status');
+  
   fetch('/api/chapter/music', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ chapter: currentChapter, music: music || null })
+    body: JSON.stringify({ chapter: chapter, music: music || null })
   }).then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.ok) {
-        document.getElementById('chapter-music-status').textContent = music ? '已设置 ✓' : '随机播放';
-        if (music) playSpecificMusic(music, true);
+        statusSpan.textContent = music ? '已保存 ✓' : '已清除，将随机播放';
+        // 如果选择的是当前章节且有音乐，则播放
+        if (music && chapter === currentChapter) {
+          playSpecificMusic(music, true);
+        }
       }
-    }).catch(function(){});
+    }).catch(function(){
+      statusSpan.textContent = '保存失败';
+    });
 }
 
 /* ========== iframe 导航控制 ========== */
@@ -616,6 +711,13 @@ window.addEventListener('message', function(e) {
       break;
     case 'home-loaded':
       currentChapter = '';
+      // 如果已有登录用户，重新发送登录消息
+      if (currentUserId) {
+        var frame = document.getElementById('content-frame');
+        if (frame && frame.contentWindow) {
+          frame.contentWindow.postMessage({ type: 'user-logged-in', user_id: currentUserId }, '*');
+        }
+      }
       break;
     case 'save-last-chapter':
       saveLastChapterFromIframe(msg.chapter, msg.scroll);
@@ -629,6 +731,9 @@ window.addEventListener('message', function(e) {
     case 'user-logged-in':
       // 用户登录后重新加载音乐设置
       loadUserMusicSettings();
+      break;
+    case 'show-user-select':
+      showUserSelectScreen();
       break;
     case 'music-cmd':
       switch(msg.cmd) {
@@ -645,19 +750,26 @@ window.addEventListener('message', function(e) {
 
 // 章节切换时的音乐处理
 function handleChapterChange(chapter) {
+  // auto_switch 关闭：不做任何操作，继续播放原有音乐
   if (!autoSwitch || !allMusicList.length) return;
+  
   fetch('/api/chapter/music?chapter=' + encodeURIComponent(chapter))
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.ok && data.music) {
+        // 章节有专属歌曲
         if (currentMusicName !== data.music) {
+          // auto_play 开启：播放专属歌曲；auto_play 关闭：切到专属歌曲并暂停
           playSpecificMusic(data.music, autoPlay);
         }
-      } else if (autoPlay) {
-        playRandomMusic(true);
+      } else {
+        // 章节无专属歌曲
+        // auto_play 开启：切换下一首并开始播放；auto_play 关闭：切换下一首并暂停
+        playRandomMusic(autoPlay);
       }
     }).catch(function() {
-      if (autoPlay) playRandomMusic(true);
+      // 出错时按照 auto_play 设置决定是否播放
+      playRandomMusic(autoPlay);
     });
 }
 
@@ -671,9 +783,12 @@ async function loadShellUserList() {
     var container = document.getElementById('shell-user-list');
     if (data.ok && data.users.length > 0) {
       container.innerHTML = data.users.map(function(u) {
-        return '<div onclick="selectUserInShell(\'' + u.id + '\', \'' + u.name.replace(/'/g, "\\'") + '\')" style="padding:14px 28px; border-radius:14px; border:1.5px solid rgba(233,30,99,0.2); background:rgba(255,255,255,0.9); cursor:pointer; transition:all 0.2s; text-align:center; min-width:100px;" onmouseover="this.style.borderColor=\'#E91E63\';this.style.background=\'rgba(233,30,99,0.06)\'" onmouseout="this.style.borderColor=\'rgba(233,30,99,0.2)\';this.style.background=\'rgba(255,255,255,0.9)\'">' +
+        return '<div style="position:relative; display:inline-block;" onmouseover="this.querySelector(\'.delete-btn\').style.opacity=\'1\'" onmouseout="this.querySelector(\'.delete-btn\').style.opacity=\'0\'">' +
+          '<div onclick="selectUserInShell(\'' + u.id + '\', \'' + u.name.replace(/'/g, "\\'") + '\')" style="padding:14px 28px; border-radius:14px; border:1.5px solid rgba(233,30,99,0.2); background:rgba(255,255,255,0.9); cursor:pointer; transition:all 0.2s; text-align:center; min-width:100px;" onmouseover="this.style.borderColor=\'#E91E63\';this.style.background=\'rgba(233,30,99,0.06)\'" onmouseout="this.style.borderColor=\'rgba(233,30,99,0.2)\';this.style.background=\'rgba(255,255,255,0.9)\'">' +
           '<i class="fa fa-user" style="font-size:20px; color:#E91E63; display:block; margin-bottom:6px;"></i>' +
           '<span style="font-size:14px; color:#C2185B; font-weight:600;">' + u.name + '</span>' +
+          '</div>' +
+          '<button onclick="event.stopPropagation(); confirmDeleteUserInShell(\'' + u.id + '\', \'' + u.name.replace(/'/g, "\\'") + '\')" class="delete-btn" style="position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; border:1.5px solid #dc2626; background:#fee2e2; color:#dc2626; cursor:pointer; font-size:12px; opacity:0; transition:all 0.2s; display:flex; align-items:center; justify-content:center;" title="删除用户"><i class="fa fa-times"></i></button>' +
           '</div>';
       }).join('');
     } else {
@@ -694,6 +809,8 @@ async function selectUserInShell(userId, userName) {
       // 隐藏用户选择界面
       document.getElementById('user-select-screen').style.display = 'none';
       userHasSelected = true;
+      // 保存当前用户 ID
+      currentUserId = userId;
       // 显示音乐播放器
       showMusicPlayer();
       // 加载用户音乐设置
@@ -707,20 +824,35 @@ async function selectUserInShell(userId, userName) {
   } catch(e) {}
 }
 
+function showUserSelectScreen() {
+  document.getElementById('user-select-screen').style.display = 'flex';
+  loadShellUserList();
+}
+
 function showCreateUserInShell() {
-  var name = prompt('请输入用户名：');
-  if (!name || !name.trim()) return;
+  document.getElementById('modal-create-user-shell').classList.add('active');
+  document.getElementById('shell-create-user-name').value = '';
+  document.getElementById('shell-create-user-name').focus();
+}
+
+function closeCreateUserModal() {
+  document.getElementById('modal-create-user-shell').classList.remove('active');
+}
+
+function confirmCreateUserInShell() {
+  var nameInput = document.getElementById('shell-create-user-name');
+  var name = nameInput.value.trim();
+  if (!name) return;
+  closeCreateUserModal();
   fetch('/api/user/create', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ name: name.trim() })
+    body: JSON.stringify({ name: name })
   })
   .then(function(res) { return res.json(); })
   .then(function(data) {
     if (data.ok) {
-      // 自动登录新用户
       selectUserInShell(data.user_id, data.name);
-      // 刷新用户列表
       loadShellUserList();
     } else {
       alert('创建失败：' + (data.error || '未知错误'));
@@ -728,6 +860,41 @@ function showCreateUserInShell() {
   })
   .catch(function() {
     alert('网络错误，创建失败');
+  });
+}
+
+function confirmDeleteUserInShell(userId, userName) {
+  document.getElementById('shell-delete-user-id').value = userId;
+  document.getElementById('shell-delete-user-name').textContent = userName;
+  document.getElementById('modal-delete-user-shell').classList.add('active');
+}
+
+function closeDeleteUserModal() {
+  document.getElementById('modal-delete-user-shell').classList.remove('active');
+}
+
+function executeDeleteUser() {
+  var userId = document.getElementById('shell-delete-user-id').value;
+  closeDeleteUserModal();
+  fetch('/api/user/delete', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ user_id: userId })
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    if (data.ok) {
+      if (currentUserId === userId) {
+        currentUserId = null;
+        document.getElementById('user-select-screen').style.display = 'flex';
+      }
+      loadShellUserList();
+    } else {
+      alert('删除失败：' + (data.error || '未知错误'));
+    }
+  })
+  .catch(function() {
+    alert('网络错误，删除失败');
   });
 }
 

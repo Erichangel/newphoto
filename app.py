@@ -204,7 +204,7 @@ def load_articles_meta(folder_path):
     """加载文章元数据"""
     meta_file = get_articles_meta_file(folder_path)
     if os.path.exists(meta_file):
-        with open(meta_file, 'r', encoding='utf-8') as f:
+        with open(meta_file, 'r', encoding='utf-8-sig') as f:
             return json.load(f)
     return {}
 
@@ -536,6 +536,14 @@ def home():
 @app.route('/chapter/<path:name>')
 def chapter(name):
     """章节详情 - 图片/视频/文章"""
+    # Flask 自动 URL 解码后的 name 可能包含乱码，需要重新编码
+    try:
+        # 如果 name 是乱码，尝试从 URL 原始值获取
+        from urllib.parse import unquote
+        raw_name = request.path.split('/chapter/')[-1]
+        name = unquote(raw_name)
+    except:
+        pass
     folder_path = os.path.join(ROOT_DIR, name)
     if not os.path.exists(folder_path):
         return '章节不存在', 404
@@ -940,13 +948,24 @@ def api_move_file():
 @app.route('/api/articles/list', methods=['GET'])
 def api_list_articles():
     """获取章节所有文章列表"""
-    chapter = request.args.get('chapter', '')
-    folder = os.path.join(ROOT_DIR, chapter)
-    if not os.path.exists(folder):
-        return jsonify({'ok': True, 'articles': []})
-    
-    articles = list_articles(folder)
-    return jsonify({'ok': True, 'articles': articles})
+    try:
+        chapter = request.args.get('chapter', '')
+        print('DEBUG: chapter param =', repr(chapter))
+        folder = os.path.join(ROOT_DIR, chapter)
+        print('DEBUG: folder path =', repr(folder))
+        print('DEBUG: folder exists =', os.path.exists(folder))
+        if not os.path.exists(folder):
+            print('DEBUG: folder does not exist!')
+            return jsonify({'ok': True, 'articles': []})
+        
+        articles = list_articles(folder)
+        print('DEBUG: found', len(articles), 'articles')
+        return jsonify({'ok': True, 'articles': articles})
+    except Exception as e:
+        print('ERROR in api_list_articles:', e)
+        import traceback
+        traceback.print_exc()
+        return jsonify({'ok': False, 'error': str(e)}), 500
 
 @app.route('/api/articles/create', methods=['POST'])
 def api_create_article():
@@ -1193,33 +1212,70 @@ def api_save_article():
 
 @app.route('/api/settings', methods=['GET', 'POST'])
 def api_settings():
-    """获取/修改根目录设置"""
-    global ROOT_DIR, chapter_cache
+    """获取/修改根目录和音乐目录设置"""
+    global ROOT_DIR, MUSIC_DIR, chapter_cache
     if request.method == 'GET':
-        return jsonify({'root_dir': ROOT_DIR})
-    new_dir = request.json.get('root_dir', '').strip()
-    if new_dir and os.path.isdir(new_dir):
-        ROOT_DIR = new_dir
-        # 保存到配置文件
-        with open(os.path.join(os.path.dirname(__file__), 'config.txt'), 'w') as f:
-            f.write(ROOT_DIR)
-        # 清除缓存
-        chapter_cache = {}
-        return jsonify({'ok': True, 'root_dir': ROOT_DIR})
-    return jsonify({'error': '目录不存在'}), 400
+        return jsonify({'root_dir': ROOT_DIR, 'music_dir': MUSIC_DIR})
+    data = request.json
+    errors = []
+    new_root = data.get('root_dir', '').strip()
+    new_music = data.get('music_dir', '').strip()
+    if new_root:
+        if os.path.isdir(new_root):
+            ROOT_DIR = new_root
+        else:
+            errors.append('照片目录不存在')
+    if new_music:
+        if os.path.isdir(new_music):
+            MUSIC_DIR = new_music
+        else:
+            errors.append('音乐目录不存在')
+    if errors:
+        return jsonify({'error': ', '.join(errors)}), 400
+    cfg_path = os.path.join(os.path.dirname(__file__), 'config.txt')
+    with open(cfg_path, 'w') as f:
+        f.write(ROOT_DIR + '\n' + MUSIC_DIR)
+    chapter_cache = {}
+    return jsonify({'ok': True, 'root_dir': ROOT_DIR, 'music_dir': MUSIC_DIR})
+
+
+@app.route('/api/browsefolders', methods=['GET'])
+def api_browse_folders():
+    """浏览指定路径下的子文件夹"""
+    req_path = request.args.get('path', '').strip()
+    if not req_path:
+        # 默认列出当前根目录的父目录
+        parent = os.path.dirname(ROOT_DIR)
+        if os.path.isdir(parent):
+            req_path = parent
+        else:
+            req_path = os.path.splitdrive(ROOT_DIR)[0] + '\\'
+    if not os.path.isdir(req_path):
+        return jsonify({'error': '路径不存在', 'folders': []})
+    try:
+        entries = []
+        for name in sorted(os.listdir(req_path)):
+            full = os.path.join(req_path, name)
+            if os.path.isdir(full) and not name.startswith('.'):
+                entries.append({'name': name, 'full_path': full})
+        return jsonify({'ok': True, 'current_path': req_path, 'folders': entries})
+    except Exception as e:
+        return jsonify({'error': str(e), 'folders': []})
 
 
 # ============ 启动 ============
 
 def load_config():
-    """从 config.txt 加载根目录"""
-    global ROOT_DIR
+    """从 config.txt 加载根目录和音乐目录"""
+    global ROOT_DIR, MUSIC_DIR
     cfg = os.path.join(os.path.dirname(__file__), 'config.txt')
     if os.path.exists(cfg):
         with open(cfg, 'r') as f:
-            d = f.read().strip()
-            if os.path.isdir(d):
-                ROOT_DIR = d
+            lines = f.read().strip().splitlines()
+            if lines and os.path.isdir(lines[0].strip()):
+                ROOT_DIR = lines[0].strip()
+            if len(lines) > 1 and os.path.isdir(lines[1].strip()):
+                MUSIC_DIR = lines[1].strip()
 
 if __name__ == '__main__':
     load_config()

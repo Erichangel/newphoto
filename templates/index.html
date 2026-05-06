@@ -611,7 +611,7 @@
       transition: all 0.3s ease;
       opacity: 0;
       pointer-events: none;
-      z-index: 200;
+      z-index: 10002;
       color: white;
     }
 
@@ -881,7 +881,6 @@
     <div class="top-bar-title">
       <i class="fa fa-heart"></i>
       <span>时光印记</span>
-      <span style="font-size: 11px; color: #bbb; font-weight: 400; margin-left: 6px;">v{{ version_ts }}</span>
     </div>
 
     <!-- 中间：年份筛选 + 继续回忆（Grid自动居中） -->
@@ -919,9 +918,9 @@
         <div id="user-menu" class="user-menu" style="display: none;">
           <div id="user-list"></div>
           <div style="border-top: 1px solid rgba(233, 30, 99, 0.1); padding-top: 8px; margin-top: 8px;">
-            <button onclick="showCreateUserModal()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-pink-50 transition text-sm" style="color: #E91E63;">
-              <i class="fa fa-user-plus" style="margin-right: 6px;"></i>
-              新建用户
+            <button onclick="switchUser()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-pink-50 transition text-sm" style="color: #E91E63;">
+              <i class="fa fa-exchange" style="margin-right: 6px;"></i>
+              切换用户
             </button>
           </div>
         </div>
@@ -1042,7 +1041,15 @@
     <div class="modal-box">
       <h3><i class="fa fa-cog" style="color: #E91E63; margin-right: 6px;"></i>设置</h3>
       <label>照片根目录</label>
-      <input type="text" id="settings-dir" placeholder="例如：K:\Pictures\照片库">
+      <div style="display:flex; gap:8px; margin-bottom:12px;">
+        <input type="text" id="settings-dir" placeholder="例如：K:\Pictures\照片库" style="flex:1;">
+        <button onclick="selectFolder('settings-dir')" style="padding:8px 12px; border-radius:8px; border:1.5px solid rgba(233,30,99,0.3); background:rgba(233,30,99,0.05); color:#E91E63; cursor:pointer; font-size:13px;">📁</button>
+      </div>
+      <label>音乐文件夹</label>
+      <div style="display:flex; gap:8px; margin-bottom:12px;">
+        <input type="text" id="settings-music-dir" placeholder="例如：K:\Pictures\音乐" style="flex:1;">
+        <button onclick="selectFolder('settings-music-dir')" style="padding:8px 12px; border-radius:8px; border:1.5px solid rgba(233,30,99,0.3); background:rgba(233,30,99,0.05); color:#E91E63; cursor:pointer; font-size:13px;">📁</button>
+      </div>
       <p class="modal-hint">修改后需刷新页面生效</p>
       <div class="modal-actions">
         <button onclick="closeModals()" class="modal-btn modal-btn-cancel">取消</button>
@@ -1105,9 +1112,19 @@
         </label>
         <span style="font-size:11px; color:#aaa;">开启后，进入页面自动开始播放音乐</span>
       </div>
-      <label>当前章节指定音乐</label>
-      <div id="chapter-music-select-area" style="margin-bottom:4px;">
-        <p style="font-size:12px; color:#999;">请在章节页面中设置该章节的专属音乐</p>
+      <label>为章节指定专属音乐</label>
+      <div style="margin-bottom:10px;">
+        <select id="chapter-select-for-music" onchange="onChapterSelectForMusicChange()" style="width:100%; padding:8px 12px; border:1.5px solid rgba(233,30,99,0.2); border-radius:8px; font-size:13px; margin-bottom:8px; color:#333;">
+          <option value="home">首页</option>
+          <option value="login">用户选择页</option>
+        </select>
+        <div style="display:flex; gap:8px;">
+          <select id="chapter-music-select" style="flex:1; padding:8px 12px; border:1.5px solid rgba(233,30,99,0.2); border-radius:8px; font-size:13px; color:#333;">
+            <option value="">随机播放</option>
+          </select>
+          <button onclick="saveChapterMusic()" style="padding:8px 16px; border-radius:8px; border:none; background:linear-gradient(135deg, #E91E63, #FF6090); color:white; font-size:13px; cursor:pointer;">保存</button>
+        </div>
+        <span id="chapter-music-status" style="font-size:11px; color:#aaa; margin-top:4px; display:block;"></span>
       </div>
       <label>可用音乐列表</label>
       <div class="music-settings-content" id="music-list-container" style="border:1.5px solid rgba(233,30,99,0.15); border-radius:10px; max-height:200px; overflow-y:auto; margin-bottom:6px;">
@@ -1369,6 +1386,8 @@
         return;
       }
       loadMusicList();
+      // 加载章节列表
+      loadChaptersForMusicSelectInIndex();
       // 加载当前设置
       try {
         const res = await fetch('/api/music/settings');
@@ -1379,6 +1398,92 @@
         }
       } catch (e) {}
       showModal('music-settings');
+    }
+
+    async function loadChaptersForMusicSelectInIndex() {
+      var chapterSelect = document.getElementById('chapter-select-for-music');
+      try {
+        const res = await fetch('/api/chapters');
+        const data = await res.json();
+        if (data.ok && data.chapters) {
+          // 保留"首页"和"用户选择页"选项
+          var existingOptions = '';
+          if (chapterSelect.options.length > 0 && chapterSelect.options[0].value === 'home') {
+            existingOptions = '<option value="home">首页</option><option value="login">用户选择页</option>';
+          }
+          // 添加章节列表
+          var chapterOptions = data.chapters.map(function(ch) {
+            return '<option value="' + ch.name + '">' + ch.year + ' - ' + ch.name + '</option>';
+          }).join('');
+          chapterSelect.innerHTML = existingOptions + chapterOptions;
+          // 默认选中首页
+          chapterSelect.value = 'home';
+          // 加载首页的音乐设置
+          onChapterSelectForMusicChange();
+        }
+      } catch (e) {}
+    }
+
+    async function onChapterSelectForMusicChange() {
+      var chapter = document.getElementById('chapter-select-for-music').value;
+      var musicSelect = document.getElementById('chapter-music-select');
+      var statusSpan = document.getElementById('chapter-music-status');
+
+      // 如果音乐列表还没加载，先加载
+      if (allMusicList.length === 0) {
+        try {
+          const res = await fetch('/api/music/list');
+          const data = await res.json();
+          if (data.ok) {
+            allMusicList = data.musics;
+          }
+        } catch (e) {}
+      }
+
+      // 始终构建完整歌曲下拉列表（包含"随机播放"选项 + 所有歌曲）
+      var optionsHtml = '<option value="">随机播放</option>';
+      for (var i = 0; i < allMusicList.length; i++) {
+        optionsHtml += '<option value="' + allMusicList[i].name + '">' + allMusicList[i].name + '</option>';
+      }
+      musicSelect.innerHTML = optionsHtml;
+
+      // 查询该章节当前指定的音乐，并选中
+      try {
+        const res = await fetch('/api/chapter/music?chapter=' + encodeURIComponent(chapter));
+        const data = await res.json();
+        if (data.ok && data.music) {
+          musicSelect.value = data.music;
+          statusSpan.textContent = '已为该章节指定音乐';
+        } else {
+          musicSelect.value = '';
+          statusSpan.textContent = '该章节使用随机播放';
+        }
+      } catch (e) {
+        statusSpan.textContent = '加载失败';
+      }
+    }
+
+    function saveChapterMusic() {
+      var chapter = document.getElementById('chapter-select-for-music').value;
+      var music = document.getElementById('chapter-music-select').value;
+      var statusSpan = document.getElementById('chapter-music-status');
+
+      fetch('/api/chapter/music', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ chapter: chapter, music: music || null })
+      }).then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.ok) {
+            statusSpan.textContent = music ? '已保存 ✓' : '已清除，将随机播放';
+            // 如果选择的是当前章节且有音乐，则播放
+            if (music && chapter === currentChapter) {
+              playSpecificMusic(music, true);
+            }
+          }
+        }).catch(function(){
+          statusSpan.textContent = '保存失败';
+        });
     }
 
     // 保存音乐设置
@@ -1505,10 +1610,17 @@
 
     // 继续回忆
     function continueMemory() {
-      const lastChapter = localStorage.getItem('lastChapter');
-      if (lastChapter) {
-        shellNav('/chapter/' + lastChapter);
-      }
+      const res = fetch('/api/user/last-chapter').then(function(r) { return r.json(); }).then(function(data) {
+        if (data.ok && data.chapter) {
+          if (data.scroll_position) {
+            // 如果有滚动位置，先跳转到章节，然后恢复滚动
+            localStorage.setItem('restoreScroll', data.scroll_position);
+            shellNav('/chapter/' + data.chapter);
+          } else {
+            shellNav('/chapter/' + data.chapter);
+          }
+        }
+      });
     }
 
     // 检查是否有最后访问的章节
@@ -1577,6 +1689,8 @@
         scrollToLastChapter(data.chapter);
       } else {
         btnContinue.style.display = 'none';
+        // 用户没有浏览记录，滚动到顶部
+        window.scrollTo(0, 0);
       }
     }
 
@@ -1653,6 +1767,12 @@
       } else {
         toast(data.error || '切换失败', true);
       }
+    }
+
+    // 切换用户：显示 shell 的用户选择界面
+    function switchUser() {
+      document.getElementById('user-menu').style.display = 'none';
+      window.parent.postMessage({ type: 'show-user-select' }, '*');
     }
 
     // 显示创建用户模态框
@@ -1864,15 +1984,111 @@
 
     async function saveSettings() {
       const dir = document.getElementById('settings-dir').value.trim();
-      if (!dir) return;
+      const musicDir = document.getElementById('settings-music-dir').value.trim();
+      if (!dir && !musicDir) return;
       const res = await fetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ root_dir: dir })
+        body: JSON.stringify({ root_dir: dir, music_dir: musicDir })
       });
       const data = await res.json();
       if (data.ok) { toast('保存成功，即将刷新'); setTimeout(() => location.reload(), 1000); }
       else toast(data.error || '失败', true);
+    }
+
+    var folderPickerTargetId = '';
+
+    function selectFolder(inputId) {
+      var input = document.getElementById(inputId);
+      if (!input) return;
+      folderPickerTargetId = inputId;
+      var currentVal = input.value.trim();
+      var browsePath = '';
+      if (currentVal && currentVal.indexOf('\\') !== -1) {
+        var parts = currentVal.split('\\');
+        parts.pop();
+        browsePath = parts.join('\\');
+      } else if (currentVal && currentVal.indexOf('/') !== -1) {
+        var parts = currentVal.split('/');
+        parts.pop();
+        browsePath = parts.join('/');
+      }
+      showFolderPicker(browsePath);
+    }
+
+    function showFolderPicker(path) {
+      var existing = document.getElementById('folder-picker-overlay');
+      if (existing) existing.remove();
+      var overlay = document.createElement('div');
+      overlay.id = 'folder-picker-overlay';
+      overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;';
+      overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+      var box = document.createElement('div');
+      box.style.cssText = 'background:#fff;border-radius:16px;padding:24px;max-width:480px;width:90%;max-height:70vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.3);';
+      box.innerHTML = '<h3 style="margin:0 0 4px 16px;font-size:16px;color:#333;"><i class="fa fa-folder-open" style="color:#E91E63;margin-right:6px;"></i>选择文件夹</h3>' +
+        '<div id="folder-picker-path" style="padding:8px 16px;font-size:12px;color:#888;background:#f5f5f5;border-radius:8px;margin-bottom:12px;word-break:break-all;">加载中...</div>' +
+        '<div id="folder-picker-list" style="flex:1;overflow-y:auto;min-hight:200px;max-height:400px;"></div>' +
+        '<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">' +
+        '<button id="fp-btn-up" style="padding:8px 16px;border-radius:8px;border:1.5px solid #ddd;background:#fff;color:#555;cursor:pointer;font-size:13px;"><i class="fa fa-arrow-up"></i> 返回上级</button> ' +
+        '<button onclick="document.getElementById(\'folder-picker-overlay\').remove()" style="padding:8px 20px;border-radius:8px;border:none;background:#eee;color:#555;cursor:pointer;font-size:13px;">取消</button></div>';
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+      loadFolderList(path || '');
+    }
+
+    var folderPickerCurrentPath = '';
+
+    async function loadFolderList(path) {
+      var listEl = document.getElementById('folder-picker-list');
+      var pathEl = document.getElementById('folder-picker-path');
+      var upBtn = document.getElementById('fp-btn-up');
+      if (!listEl) return;
+      listEl.innerHTML = '<div style="padding:30px;text-align:center;color:#bbb;"><i class="fa fa-spinner fa-spin" style="font-size:20px;"></i><div style="margin-top:8px;font-size:13px;">加载中...</div></div>';
+      try {
+        var url = '/api/browsefolders';
+        if (path) url += '?path=' + encodeURIComponent(path);
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.ok) {
+          folderPickerCurrentPath = data.current_path;
+          pathEl.textContent = data.current_path;
+          upBtn.onclick = function() {
+            var cur = data.current_path.replace(/[/\\]+$/, '');
+            var sepIdx = Math.max(cur.lastIndexOf('/'), cur.lastIndexOf('\\'));
+            if (sepIdx > 2) {
+              loadFolderList(cur.substring(0, sepIdx));
+            } else if (cur.length > 2) {
+              loadFolderList(cur.substring(0, 3));
+            }
+          };
+          if (data.folders.length === 0) {
+            listEl.innerHTML = '<div style="padding:30px;text-align:center;color:#bbb;font-size:13px;">此目录下没有子文件夹</div>';
+            return;
+          }
+          var html = '';
+          for (var i = 0; i < data.folders.length; i++) {
+            var f = data.folders[i];
+            var safePath = f.full_path.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            html += '<div style="display:flex;align-items:center;padding:10px 14px;cursor:pointer;border-radius:8px;margin-bottom:2px;transition:background 0.15s;" onmouseover="this.style.background=\'#fef0f5\'" onmouseout="this.style.background=\'\'" onclick="pickFolder(\'' + safePath + '\')">' +
+              '<i class="fa fa-folder" style="color:#FFB74D;margin-right:10px;font-size:16px;width:20px;text-align:center;"></i>' +
+              '<span style="flex:1;font-size:14px;color:#333;">' + f.name + '</span>' +
+              '<i class="fa fa-chevron-right" style="color:#ccc;font-size:11px;"></i></div>';
+            html += '<div onmouseover="this.previousElementSibling.style.background=\'#fef0f5\'" onmouseout="this.previousElementSibling.style.background=\'\'" onclick="loadFolderList(\'' + safePath + '\')" style="display:flex;align-items:center;padding:6px 14px 6px 44px;cursor:pointer;border-radius:8px;margin-bottom:2px;font-size:12px;color:#999;transition:background 0.15s;" onmouseover="this.style.background=\'#fdf0f5\'" onmouseout="this.style.background=\'\'"><span>进入此文件夹</span></div>';
+          }
+          listEl.innerHTML = html;
+        } else {
+          listEl.innerHTML = '<div style="padding:30px;text-align:center;color:#E91E63;font-size:13px;"><i class="fa fa-exclamation-circle" style="display:block;font-size:20px;margin-bottom:6px;"></i>' + (data.error || '加载失败') + '</div>';
+        }
+      } catch (e) {
+        listEl.innerHTML = '<div style="padding:30px;text-align:center;color:#E91E63;font-size:13px;">网络错误</div>';
+      }
+    }
+
+    function pickFolder(fullPath) {
+      var input = document.getElementById(folderPickerTargetId);
+      if (input) input.value = fullPath;
+      var overlay = document.getElementById('folder-picker-overlay');
+      if (overlay) overlay.remove();
     }
 
     // 监听 shell 的用户登录消息
@@ -1885,8 +2101,13 @@
         if (data.ok && data.user) {
           document.getElementById('current-user-name').textContent = data.user.name;
           loadUserLastChapter();
+        } else {
+          // 新用户或无记录，滚动到顶部
+          window.scrollTo(0, 0);
         }
-      }).catch(function(){});
+      }).catch(function(){
+        window.scrollTo(0, 0);
+      });
     });
 
     /* ========== 滚动淡入动画 (IntersectionObserver) ========== */

@@ -2235,7 +2235,7 @@ function toggleEdit() {
   editing = !editing;
   document.getElementById('article-preview').style.display = editing ? 'none' : 'block';
   document.getElementById('article-edit').style.display = editing ? 'block' : 'none';
-  const text = editing ? '<i class="fa fa-eye"></i> 预览' : '<i class="fa fa-pencil"></i> 编辑模式';
+  const text = editing ? '<i class="fa fa-save"></i> 保存' : '<i class="fa fa-pencil"></i> 编辑模式';
   const btnEdit = document.getElementById('btn-edit');
   if (btnEdit) btnEdit.innerHTML = text;
   if (editing) loadEditAuthorSelect();
@@ -2364,7 +2364,8 @@ let allArticles = [];
 
 async function loadArticleList() {
   try {
-    const res = await fetch(`/api/articles/list?chapter={{ chapter_name }}`);
+    const chapterEncoded = encodeURIComponent('{{ chapter_name }}');
+    const res = await fetch(`/api/articles/list?chapter=${chapterEncoded}`);
     const data = await res.json();
     if (data.ok) {
       allArticles = data.articles;
@@ -2401,7 +2402,8 @@ async function switchArticle(key) {
     updateAuthorDisplay(article.author);
     
     try {
-      const res = await fetch(`/api/articles/get?chapter={{ chapter_name }}&key=${key}`);
+      const chapterEncoded = encodeURIComponent('{{ chapter_name }}');
+      const res = await fetch(`/api/articles/get?chapter=${chapterEncoded}&key=${key}`);
       const data = await res.json();
       if (data.ok && data.content !== undefined) {
         document.getElementById('article-preview').innerHTML = simple_markdown(data.content);
@@ -2757,6 +2759,13 @@ function saveUserLastChapter(chapterName, scrollPosition) {
 
 saveUserLastChapter('{{ chapter_name }}', window.scrollY || 0);
 localStorage.setItem('lastChapter', '{{ chapter_name }}');
+
+// 恢复滚动位置（来自继续回忆）
+var restoreScroll = localStorage.getItem('restoreScroll');
+if (restoreScroll) {
+  localStorage.removeItem('restoreScroll');
+  setTimeout(function() { window.scrollTo(0, parseInt(restoreScroll)); }, 500);
+}
 
 // 初始化
 const keepEditing = localStorage.getItem('keepEditing') === 'true';
