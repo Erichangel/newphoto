@@ -866,8 +866,9 @@
         margin: 0 16px;
       }
     }
-  </style>
-</head>
+
+    </style>
+  </head>
 <body class="min-h-screen">
 
   <!-- 浮动光晕装饰 -->
@@ -878,7 +879,7 @@
   <!-- 顶部固定栏 -->
   <header class="top-bar" style="display:grid !important; grid-template-columns:1fr auto 1fr !important; align-items:center; justify-content:normal;">
     <!-- 左：标题 -->
-    <div class="top-bar-title">
+    <div class="top-bar-title" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="cursor:pointer;">
       <i class="fa fa-heart"></i>
       <span>时光印记</span>
     </div>
@@ -894,7 +895,7 @@
         <i class="fa fa-chevron-down" style="font-size:10px; color:#E91E63; margin-left:-20px; pointer-events:none;"></i>
       </div>
 
-      <button id="btn-continue" onclick="continueMemory()" class="btn-pink-gradient" style="display: none;">
+      <button id="btn-continue" onclick="continueMemory()" class="btn-pink-gradient" style="display: none;" title="返回上次观看位置">
         <i class="fa fa-history"></i>
         <span>继续回忆</span>
       </button>
@@ -1610,17 +1611,20 @@
 
     // 继续回忆
     function continueMemory() {
-      const res = fetch('/api/user/last-chapter').then(function(r) { return r.json(); }).then(function(data) {
-        if (data.ok && data.chapter) {
-          if (data.scroll_position) {
-            // 如果有滚动位置，先跳转到章节，然后恢复滚动
-            localStorage.setItem('restoreScroll', data.scroll_position);
-            shellNav('/chapter/' + data.chapter);
-          } else {
-            shellNav('/chapter/' + data.chapter);
-          }
+      // 滚动到上次观看的章节位置（首页）
+      var lastChapter = localStorage.getItem('lastChapter');
+      if (!lastChapter) return;
+      
+      var nodes = document.querySelectorAll('.timeline-node');
+      var targetNode = null;
+      nodes.forEach(function(node) {
+        if (node.getAttribute('onclick') && node.getAttribute('onclick').indexOf(lastChapter) !== -1) {
+          targetNode = node;
         }
       });
+      if (targetNode) {
+        targetNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     }
 
     // 检查是否有最后访问的章节
@@ -1683,9 +1687,6 @@
       document.querySelectorAll('.last-view-indicator').forEach(function(el) { el.remove(); });
       if (data.ok && data.chapter) {
         btnContinue.style.display = 'flex';
-        btnContinue.onclick = function() {
-          shellNav('/chapter/' + data.chapter);
-        };
         scrollToLastChapter(data.chapter);
       } else {
         btnContinue.style.display = 'none';

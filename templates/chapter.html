@@ -1341,6 +1341,7 @@ let currentIdx = 0;
 /* ========== iframe 通信 ========== */
 var isInIframe = window.parent !== window;
 var isIframeMode = {{ 'true' if is_iframe else 'false' }};
+console.log('[chapter.html] isInIframe:', isInIframe, 'isIframeMode:', isIframeMode);
 function shellNav(url) {
   if (isInIframe) { parent.postMessage({ type: 'navigate', url: url }, '*'); }
   else { location.href = url; }
@@ -1395,12 +1396,17 @@ if (!isInIframe && !isIframeMode) {
 
 async function loadMusicList() {
   try {
+    console.log('[loadMusicList] 开始加载音乐列表...');
     const res = await fetch('/api/music/list');
     const data = await res.json();
+    console.log('[loadMusicList] 音乐列表数据:', data);
     if (data.ok) {
       allMusicList = data.musics;
+      console.log('[loadMusicList] 音乐数量:', allMusicList.length);
       renderMusicList();
+      console.log('[loadMusicList] 调用 renderMusicList() 完成');
       renderChapterMusicSelect();
+      console.log('[loadMusicList] 调用 renderChapterMusicSelect() 完成');
       document.getElementById('music-dir-hint').textContent = data.music_dir || 'K:\\Pictures\\音乐';
     }
   } catch(e) { if (e.name !== 'AbortError') console.error('加载音乐列表失败:', e); }
@@ -1424,9 +1430,12 @@ function renderMusicList() {
 
 function renderChapterMusicSelect() {
   const select = document.getElementById('chapter-music-select');
+  console.log('[renderChapterMusicSelect] select 元素:', select);
+  console.log('[renderChapterMusicSelect] allMusicList:', allMusicList);
   if (!select) return;
   let html = '<option value="">随机播放</option>';
   allMusicList.forEach(m => { html += `<option value="${m.name}">${m.name}</option>`; });
+  console.log('[renderChapterMusicSelect] 生成的 HTML:', html);
   select.innerHTML = html;
 }
 

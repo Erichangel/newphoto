@@ -8,6 +8,7 @@ import shutil
 import uuid
 import time
 import json
+import csv
 from flask import Flask, render_template, request, jsonify, send_file, send_from_directory, make_response
 from PIL import Image
 
@@ -384,17 +385,61 @@ def simple_markdown(text):
 
 MUSIC_CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'music_config.json')
 
+MUSIC_CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'music_config.json')
+CHAPTER_MUSIC_CSV = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'chapter_music.csv')
+
+def load_chapter_music_csv():
+    """从 CSV 文件加载章节音乐映射"""
+    chapter_music = {}
+    if os.path.exists(CHAPTER_MUSIC_CSV):
+        try:
+            with open(CHAPTER_MUSIC_CSV, 'r', encoding='utf-8-sig') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    chapter = row.get('chapter', '').strip()
+                    music = row.get('music', '').strip()
+                    if chapter:
+                        chapter_music[chapter] = music
+        except Exception as e:
+            print(f'加载 CSV 文件失败: {e}')
+    return chapter_music
+
+def save_chapter_music_csv(chapter_music):
+    """保存章节音乐映射到 CSV 文件"""
+    try:
+        with open(CHAPTER_MUSIC_CSV, 'w', encoding='utf-8', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=['chapter', 'music'])
+            writer.writeheader()
+            for chapter, music in chapter_music.items():
+                if music:  # 只保存有音乐的章节
+                    writer.writerow({'chapter': chapter, 'music': music})
+    except Exception as e:
+        print(f'保存 CSV 文件失败: {e}')
+
 def load_music_config():
-    """加载音乐配置（章节-音乐关联 + 用户设置）"""
+    """加载音乐配置（章节 - 音乐关联 + 用户设置）"""
+    # 优先从 CSV 文件加载
+    chapter_music = load_chapter_music_csv()
+    
+    # 兼容旧的 JSON 配置
     if os.path.exists(MUSIC_CONFIG_FILE):
-        with open(MUSIC_CONFIG_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return {'chapter_music': {}, 'settings': {'auto_switch': True}}
+        try:
+            with open(MUSIC_CONFIG_FILE, 'r', encoding='utf-8') as f:
+                old_config = json.load(f)
+                # 合并旧配置（CSV 优先）
+                old_chapter_music = old_config.get('chapter_music', {})
+                for chapter, music in old_chapter_music.items():
+                    if chapter not in chapter_music:
+                        chapter_music[chapter] = music
+        except:
+            pass
+    
+    return {'chapter_music': chapter_music, 'settings': {'auto_switch': True}}
 
 def save_music_config(config):
-    """保存音乐配置"""
-    with open(MUSIC_CONFIG_FILE, 'w', encoding='utf-8') as f:
-        json.dump(config, f, ensure_ascii=False, indent=2)
+    """保存音乐配置到 CSV 文件"""
+    # 保存到 CSV 文件
+    save_chapter_music_csv(config.get('chapter_music', {}))
 
 def get_music_list():
     """获取音乐文件夹中的所有音频文件"""
@@ -467,10 +512,16 @@ def api_chapter_music():
         music = request.json.get('music', '')
         if not chapter:
             return jsonify({'error': '章节名不能为空'}), 400
-        if music:
+        
+        # 处理 __none__ 标记
+        if music == '__none__':
+            config['chapter_music'][chapter] = '__none__'
+        elif music:
             config['chapter_music'][chapter] = music
         else:
+            # 空字符串表示删除配置
             config['chapter_music'].pop(chapter, None)
+        
         save_music_config(config)
         return jsonify({'ok': True})
 
@@ -1279,8 +1330,12 @@ def load_config():
 
 if __name__ == '__main__':
     load_config()
-    print(f'\n  🌸 时光印记（精简版）')
-    print(f'  📂 照片目录: {ROOT_DIR}')
-    print(f'  📱 访问地址: http://localhost:5000\n')
+    # 设置控制台编码为 UTF-8，支持 emoji 输出
+    import sys
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    print(f'\n  时光印记（精简版）')
+    print(f'  照片目录：{ROOT_DIR}')
+    print(f'  访问地址：http://localhost:5000\n')
     # 关闭 debug 模式，提高性能
     app.run(host='0.0.0.0', port=5000, debug=False)

@@ -377,15 +377,18 @@ function formatTime(sec) {
 
 async function loadMusicList() {
   try {
+    console.log('[shell] loadMusicList 开始加载...');
     var res = await fetch('/api/music/list');
     var data = await res.json();
+    console.log('[shell] loadMusicList 数据:', data);
     if (data.ok) {
       allMusicList = data.musics;
+      console.log('[shell] loadMusicList 音乐数量:', allMusicList.length);
       renderMusicList();
       renderChapterMusicSelect();
       document.getElementById('music-dir-hint').textContent = data.music_dir || 'K:\\Pictures\\音乐';
     }
-  } catch (e) { console.error('加载音乐列表失败:', e); }
+  } catch (e) { console.error('[shell] loadMusicList 失败:', e); }
 }
 
 function renderMusicList() {
@@ -405,23 +408,9 @@ function renderMusicList() {
 }
 
 function renderChapterMusicSelect() {
-  var select = document.getElementById('chapter-music-select');
-  if (!select) return;
-  var html = '<option value="">随机播放</option>';
-  allMusicList.forEach(function(m) { html += '<option value="' + m.name + '">' + m.name + '</option>'; });
-  select.innerHTML = html;
-  if (currentChapter) {
-    fetch('/api/chapter/music?chapter=' + encodeURIComponent(currentChapter))
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        if (data.ok && data.music) {
-          select.value = data.music;
-          document.getElementById('chapter-music-status').textContent = '已设置';
-        } else {
-          document.getElementById('chapter-music-status').textContent = '';
-        }
-      }).catch(function(){});
-  }
+  console.log('[renderChapterMusicSelect] 开始渲染');
+  // 不直接填充，而是调用 onChapterSelectForMusicChange 来根据当前选中章节加载
+  onChapterSelectForMusicChange();
 }
 
 function playSpecificMusic(name, shouldPlay) {
@@ -586,29 +575,45 @@ async function loadChaptersForMusicSelect() {
 }
 
 async function onChapterSelectForMusicChange() {
+  console.log('[onChapterSelectForMusicChange] 开始执行');
   var chapter = document.getElementById('chapter-select-for-music').value;
+  console.log('[onChapterSelectForMusicChange] 选中章节:', chapter);
   var musicSelect = document.getElementById('chapter-music-select');
   var statusSpan = document.getElementById('chapter-music-status');
   
-  // 重置音乐下拉框
-  musicSelect.innerHTML = '<option value="">随机播放</option>';
+  console.log('[onChapterSelectForMusicChange] allMusicList 长度:', allMusicList.length);
   
   try {
     var res = await fetch('/api/chapter/music?chapter=' + encodeURIComponent(chapter));
     var data = await res.json();
-    if (data.ok) {
-      if (data.music) {
-        // 该章节有专属音乐，选中它
-        musicSelect.innerHTML = '<option value="">随机播放</option>' +
-          allMusicList.map(function(m) {
-            return '<option value="' + m.name + '"' + (m.name === data.music ? ' selected' : '') + '>' + m.name + '</option>';
-          }).join('');
-        statusSpan.textContent = '已为该章节指定音乐';
-      } else {
-        statusSpan.textContent = '该章节使用随机播放';
-      }
+    console.log('[onChapterSelectForMusicChange] API 返回:', data);
+    
+    // 始终填充所有音乐选项
+    var currentMusic = (data.ok && data.music) ? data.music : '';
+    var html = '<option value="">随机播放</option><option value="__none__">不播放音乐</option>' +
+      allMusicList.map(function(m) {
+        return '<option value="' + m.name + '"' + (m.name === currentMusic ? ' selected' : '') + '>' + m.name + '</option>';
+      }).join('');
+    
+    musicSelect.innerHTML = html;
+    
+    // 如果当前音乐是 __none__，需要手动选中
+    if (currentMusic === '__none__') {
+      musicSelect.value = '__none__';
+    }
+    
+    if (currentMusic === '__none__') {
+      statusSpan.textContent = '已为该章节指定音乐';
+      console.log('[onChapterSelectForMusicChange] 指定不播放音乐');
+    } else if (currentMusic) {
+      statusSpan.textContent = '已为该章节指定音乐';
+      console.log('[onChapterSelectForMusicChange] 有专属音乐，填充完成');
+    } else {
+      statusSpan.textContent = '该章节使用随机播放';
+      console.log('[onChapterSelectForMusicChange] 无专属音乐，但已填充所有选项');
     }
   } catch (e) {
+    console.error('[onChapterSelectForMusicChange] 错误:', e);
     statusSpan.textContent = '加载失败';
   }
 }
@@ -652,17 +657,32 @@ function saveChapterMusic() {
   var music = document.getElementById('chapter-music-select').value;
   var statusSpan = document.getElementById('chapter-music-status');
   
+  // 如果选择了"不播放音乐"，保存特殊标记
+  var musicToSave = (music === '__none__') ? '__none__' : (music || null);
+  
   fetch('/api/chapter/music', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ chapter: chapter, music: music || null })
+    body: JSON.stringify({ chapter: chapter, music: musicToSave })
   }).then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.ok) {
-        statusSpan.textContent = music ? '已保存 ✓' : '已清除，将随机播放';
-        // 如果选择的是当前章节且有音乐，则播放
-        if (music && chapter === currentChapter) {
-          playSpecificMusic(music, true);
+        if (music === '__none__') {
+          statusSpan.textContent = '已保存 ✓ 该章节不播放音乐';
+          // 如果选择的是当前章节，则停止播放
+          if (chapter === currentChapter) {
+            bgmAudio.pause();
+            isMusicPlaying = false;
+            updateMusicUI();
+          }
+        } else if (music) {
+          statusSpan.textContent = '已保存 ✓';
+          // 如果选择的是当前章节且有音乐，则播放
+          if (music && chapter === currentChapter) {
+            playSpecificMusic(music, true);
+          }
+        } else {
+          statusSpan.textContent = '已清除，将随机播放';
         }
       }
     }).catch(function(){
@@ -711,6 +731,8 @@ window.addEventListener('message', function(e) {
       break;
     case 'home-loaded':
       currentChapter = '';
+      // 首页也按照音乐设置处理（随机播放或不播放）
+      handleChapterChange('');
       // 如果已有登录用户，重新发送登录消息
       if (currentUserId) {
         var frame = document.getElementById('content-frame');
@@ -753,12 +775,22 @@ function handleChapterChange(chapter) {
   // auto_switch 关闭：不做任何操作，继续播放原有音乐
   if (!autoSwitch || !allMusicList.length) return;
   
-  fetch('/api/chapter/music?chapter=' + encodeURIComponent(chapter))
+  // 首页和用户选择页使用空字符串作为 key
+  var chapterKey = chapter || '';
+  
+  fetch('/api/chapter/music?chapter=' + encodeURIComponent(chapterKey))
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.ok && data.music) {
         // 章节有专属歌曲
-        if (currentMusicName !== data.music) {
+        if (data.music === '__none__') {
+          // 章节指定不播放音乐，停止播放
+          bgmAudio.pause();
+          isMusicPlaying = false;
+          currentMusicName = null;
+          updateMusicUI();
+          console.log('[handleChapterChange] 章节指定不播放音乐，已停止');
+        } else if (currentMusicName !== data.music) {
           // auto_play 开启：播放专属歌曲；auto_play 关闭：切到专属歌曲并暂停
           playSpecificMusic(data.music, autoPlay);
         }
