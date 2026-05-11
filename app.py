@@ -9,11 +9,32 @@ import uuid
 import time
 import json
 import csv
+import logging
 from flask import Flask, render_template, request, jsonify, send_file, send_from_directory, make_response
 from PIL import Image
 
+# 配置日志系统
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('app.log', encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
 app = Flask(__name__)
 app.secret_key = 'time-imprint-secret-key-2024'
+
+# 分级缓存配置
+CACHE_CONFIG = {
+    'static': {'max_age': 86400},      # 静态资源 1 天
+    'thumbnail': {'max_age': 3600},     # 缩略图 1 小时
+    'api': {'max_age': 0},              # API 不缓存
+    'html': {'max_age': 0},             # HTML 不缓存
+    'media': {'max_age': 3600},         # 图片/视频 1 小时
+}
 
 # 缓存策略：HTML/API 无缓存，静态资源长缓存
 @app.after_request
@@ -22,15 +43,22 @@ def set_cache_headers(response):
     
     # HTML 页面和 API：禁止缓存
     if '/api/' in path or path == '/' or path == '/home' or path.endswith('.html') or (response.content_type and 'text/html' in response.content_type):
-        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        cache = CACHE_CONFIG['api'] if '/api/' in path else CACHE_CONFIG['html']
+        response.headers['Cache-Control'] = f'no-cache, no-store, must-revalidate, max-age={cache["max_age"]}'
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '0'
     # 静态资源：长期缓存（通过版本参数 ?v=xxx 破缓存）
     elif any(path.endswith(ext) for ext in ['.css', '.js', '.woff', '.woff2', '.ttf']):
-        response.headers['Cache-Control'] = 'public, max-age=86400'
+        cache = CACHE_CONFIG['static']
+        response.headers['Cache-Control'] = f'public, max-age={cache["max_age"]}'
+    # 缩略图
+    elif path.startswith('/thumb/'):
+        cache = CACHE_CONFIG['thumbnail']
+        response.headers['Cache-Control'] = f'public, max-age={cache["max_age"]}'
     # 图片/视频：中等缓存
     elif any(path.endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.webm']):
-        response.headers['Cache-Control'] = 'public, max-age=3600'
+        cache = CACHE_CONFIG['media']
+        response.headers['Cache-Control'] = f'public, max-age={cache["max_age"]}'
     
     return response
 
@@ -43,20 +71,83 @@ SUPPORTED_AUDIO = {'.mp3', '.wav', '.ogg', '.m4a', '.flac', '.aac'}
 THUMB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '_thumbs')
 os.makedirs(THUMB_DIR, exist_ok=True)
 
+# ============ 安全验证函数 ============
+def validate_chapter_name(name):
+    """验证章节名是否合法，防止路径遍历攻击"""
+    if not name or not isinstance(name, str):
+        return False
+    # 检查是否包含危险字符
+    if '..' in name or os.path.isabs(name):
+        return False
+    # 检查是否包含路径分隔符
+    if os.path.sep in name or '/' in name or '\\' in name:
+        return False
+    # 白名单验证：允许字母、数字、中文、下划线、中划线、点、空格
+    if not re.match(r'^[\w\-.\u4e00-\u9fa5 ]+$', name):
+        return False
+    # 长度限制
+    if len(name) > 100:
+        return False
+    return True
+
+def validate_filename(filename):
+    """验证文件名是否合法"""
+    if not filename or not isinstance(filename, str):
+        return False
+    # 检查是否包含路径分隔符
+    if os.path.sep in filename or '/' in filename or '\\' in filename:
+        return False
+    # 检查是否包含危险字符
+    if '..' in filename:
+        return False
+    # 长度限制
+    if len(filename) > 255:
+        return False
+    return True
+
+def safe_path_join(base_path, *paths):
+    """安全地拼接路径，确保结果在 base_path 内"""
+    result = os.path.normpath(os.path.join(base_path, *paths))
+    # 确保结果在 base_path 内
+    if not result.startswith(os.path.normpath(base_path)):
+        return None
+    return result
+
 # 用户数据文件
 USER_DATA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'users.json')
 
 def load_users():
-    """加载用户数据"""
-    if os.path.exists(USER_DATA_FILE):
+    """加载用户数据（带文件锁）"""
+    import fcntl
+    if not os.path.exists(USER_DATA_FILE):
+        return {}
+    try:
         with open(USER_DATA_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return {}
+            fcntl.flock(f.fileno(), fcntl.LOCK_SH)
+            try:
+                return json.load(f)
+            finally:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+    except Exception as e:
+        logger.error(f'加载用户数据失败：{e}')
+        return {}
 
 def save_users(users):
-    """保存用户数据"""
-    with open(USER_DATA_FILE, 'w', encoding='utf-8') as f:
-        json.dump(users, f, ensure_ascii=False, indent=2)
+    """保存用户数据（带文件锁）"""
+    import fcntl
+    try:
+        # 确保目录存在
+        os.makedirs(os.path.dirname(USER_DATA_FILE), exist_ok=True)
+        with open(USER_DATA_FILE, 'w', encoding='utf-8') as f:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+            try:
+                json.dump(users, f, ensure_ascii=False, indent=2)
+            finally:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+        logger.info('用户数据已保存')
+    except Exception as e:
+        logger.error(f'保存用户数据失败：{e}')
+        raise
 
 def get_current_user():
     """获取当前用户（从 session）"""
@@ -824,18 +915,39 @@ def api_rename_chapter():
     global chapter_cache
     old_name = request.json.get('old_name')
     new_name = request.json.get('new_name')
-    old_path = os.path.join(ROOT_DIR, old_name)
-    new_path = os.path.join(ROOT_DIR, new_name)
+    
+    # 安全验证
+    if not validate_chapter_name(old_name):
+        logger.warning(f'无效的旧章节名：{old_name}')
+        return jsonify({'error': '无效的章节名'}), 400
+    if not validate_chapter_name(new_name):
+        logger.warning(f'无效的新章节名：{new_name}')
+        return jsonify({'error': '无效的章节名'}), 400
+    
+    # 安全路径拼接
+    old_path = safe_path_join(ROOT_DIR, old_name)
+    new_path = safe_path_join(ROOT_DIR, new_name)
+    
+    if not old_path or not new_path:
+        logger.error('路径拼接失败')
+        return jsonify({'error': '无效的路径'}), 400
+    
     if not os.path.exists(old_path):
+        logger.warning(f'章节不存在：{old_name}')
         return jsonify({'error': '章节不存在'}), 404
     if os.path.exists(new_path):
+        logger.warning(f'名称已存在：{new_name}')
         return jsonify({'error': '名称已存在'}), 400
+    
     # 清理文件名中的非法字符
     new_name = re.sub(r'[<>:"/\\|?*]', '', new_name).strip()
     if not new_name:
         return jsonify({'error': '名称无效'}), 400
+    
     new_path = os.path.join(ROOT_DIR, new_name)
     os.rename(old_path, new_path)
+    logger.info(f'章节重命名：{old_name} -> {new_name}')
+    
     # 清除缓存
     chapter_cache = {}
     return jsonify({'ok': True, 'new_name': new_name})
@@ -1001,21 +1113,16 @@ def api_list_articles():
     """获取章节所有文章列表"""
     try:
         chapter = request.args.get('chapter', '')
-        print('DEBUG: chapter param =', repr(chapter))
         folder = os.path.join(ROOT_DIR, chapter)
-        print('DEBUG: folder path =', repr(folder))
-        print('DEBUG: folder exists =', os.path.exists(folder))
         if not os.path.exists(folder):
-            print('DEBUG: folder does not exist!')
+            logger.warning(f'文件夹不存在：{folder}')
             return jsonify({'ok': True, 'articles': []})
         
         articles = list_articles(folder)
-        print('DEBUG: found', len(articles), 'articles')
+        logger.info(f'找到 {len(articles)} 篇文章')
         return jsonify({'ok': True, 'articles': articles})
     except Exception as e:
-        print('ERROR in api_list_articles:', e)
-        import traceback
-        traceback.print_exc()
+        logger.exception('API 获取文章列表失败')
         return jsonify({'ok': False, 'error': str(e)}), 500
 
 @app.route('/api/articles/create', methods=['POST'])
