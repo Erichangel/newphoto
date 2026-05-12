@@ -5,13 +5,13 @@ Thin entry point: creates Flask app, loads config, registers blueprints.
 import os
 import sys
 import io
-from flask import Flask
+from flask import Flask, request
 
 # Set console encoding for UTF-8 support
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
 # Import config first (must load before services)
-from config import config, load_config
+from config import config
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -37,9 +37,6 @@ def set_cache_headers(response):
         response.headers['Cache-Control'] = 'public, max-age=3600'
 
     return response
-
-# Import request for cache headers
-from flask import request
 
 # Register blueprints
 from routes.page_routes import page_bp
