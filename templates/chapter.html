@@ -229,37 +229,135 @@
   /* 缩略图 */
   .thumb-list {
     display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    padding: 8px 0;
-    scrollbar-width: thin;
-    scrollbar-color: #f8bbd0 transparent;
+    gap: 5px;
+    overflow-x: hidden;
+    padding: 4px 0;
+    scrollbar-width: none;
   }
-  .thumb-list::-webkit-scrollbar { height: 4px; }
-  .thumb-list::-webkit-scrollbar-thumb { background: #f8bbd0; border-radius: 4px; }
+  .thumb-list::-webkit-scrollbar { display: none; }
   .thumb-item {
-    width: 72px;
-    height: 54px;
-    border-radius: 8px;
+    width: 56px;
+    height: 42px;
+    border-radius: 6px;
     overflow: hidden;
     cursor: pointer;
     flex-shrink: 0;
     border: 2px solid transparent;
     transition: all 0.2s ease;
-    opacity: 0.7;
+    opacity: 0.6;
     position: relative;
   }
   .thumb-item.active {
     border-color: #E91E63;
     opacity: 1;
-    box-shadow: 0 0 12px rgba(233, 30, 99, 0.3);
+    box-shadow: 0 0 8px rgba(233, 30, 99, 0.4);
   }
-  .thumb-item:hover { opacity: 1; }
+  .thumb-item:hover { opacity: 0.9; }
   .thumb-item img, .thumb-item video {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
+  }
+
+  /* 媒体筛选 + 分页控制栏 */
+  .media-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px;
+    background: transparent;
+    border-radius: 12px;
+    gap: 16px;
+    position: relative;
+  }
+  .media-controls select {
+    padding: 6px 30px 6px 12px;
+    border-radius: 22px;
+    border: 1.5px solid #E91E63;
+    background: rgba(255,255,255,0.6);
+    color: #E91E63;
+    font-size: 13px;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    font-weight: 500;
+    backdrop-filter: blur(4px);
+    background-image: url('data:image/svg+xml;utf8,<svg fill=\'%23E91E63\' xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'><path d=\'M7 10l5 5 5-5z\'/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px;
+    transition: all 0.2s;
+  }
+  .media-controls select:hover {
+    background: rgba(255,255,255,0.9);
+    box-shadow: 0 2px 8px rgba(233,30,99,0.15);
+  }
+  .page-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .page-nav button {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: transparent;
+    border: 2px solid #E91E63;
+    color: #E91E63;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .page-nav button:hover {
+    background: rgba(233,30,99,0.1);
+    box-shadow: 0 2px 12px rgba(233,30,99,0.2);
+  }
+  .page-nav button:active { transform: scale(0.92); }
+
+  /* 缩略图行 + 两侧按钮 */
+  .thumb-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+  }
+  .thumb-nav-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: transparent;
+    border: 2px solid #E91E63;
+    color: #E91E63;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .thumb-nav-btn:hover {
+    background: rgba(233,30,99,0.1);
+    box-shadow: 0 2px 12px rgba(233,30,99,0.2);
+  }
+  .thumb-nav-btn:active { transform: scale(0.92); }
+  #page-indicator {
+    color: #E91E63;
+    font-size: 13px;
+    font-weight: 600;
+    min-width: 55px;
+    text-align: center;
+  }
+  #filter-count {
+    color: #bbb;
+    font-size: 11px;
+    white-space: nowrap;
   }
 
   /* 导航切换按钮 */
@@ -861,9 +959,24 @@
       min-height: 200px;
       max-height: 45vh;
     }
-    .thumb-item {
-      width: 56px;
-      height: 42px;
+    .thumb-grid {
+      grid-template-columns: repeat(5, 1fr);
+    }
+    .media-controls {
+      padding: 6px 10px;
+    }
+    .media-controls select {
+      padding: 4px 26px 4px 8px;
+      font-size: 12px;
+    }
+    .page-nav button {
+      width: 26px;
+      height: 26px;
+      font-size: 11px;
+    }
+    #page-indicator {
+      font-size: 12px;
+      min-width: 45px;
     }
     .nav-btn {
       width: 32px;
@@ -966,9 +1079,22 @@
         </div>
         <div id="main-content"></div>
       </div>
-
-      <!-- 缩略图列表 -->
-      <div class="thumb-list" id="thumb-list"></div>
+      <!-- 缩略图列表 + 翻页按钮 -->
+      <div class="thumb-row">
+        <button class="thumb-nav-btn prev-btn" onclick="goToPage(currentPage - 1)"><i class="fa fa-chevron-left"></i></button>
+        <div class="thumb-list" id="thumb-list"></div>
+        <button class="thumb-nav-btn next-btn" onclick="goToPage(currentPage + 1)"><i class="fa fa-chevron-right"></i></button>
+      </div>
+      <!-- 媒体筛选 + 分页信息栏 -->
+      <div class="media-controls">
+        <select id="media-filter" onchange="applyMediaFilter(this.value)">
+          <option value="all">显示全部</option>
+          <option value="image">只显示图片</option>
+          <option value="video">只显示视频</option>
+        </select>
+        <span id="page-indicator">1 / 1</span>
+        <span id="filter-count"></span>
+      </div>
       {% else %}
       <!-- 空状态 -->
       <div class="main-display">
@@ -1258,7 +1384,7 @@
 
 {% if not is_iframe %}
 <!-- 全局音乐播放器 -->
-<audio id="bgm-audio" preload="auto" loop></audio>
+<audio id="bgm-audio" preload="auto"></audio>
 <div id="music-player" class="music-player">
   <button class="music-icon" onclick="toggleMusicPlayer()" title="展开/收起"><i class="fa fa-music"></i></button>
   <div class="music-info">
@@ -1355,6 +1481,7 @@ if (isInIframe) shellMsg({ type: 'chapter-loaded', chapter: '{{ chapter_name }}'
 const CHAPTER_NAME = '{{ chapter_name }}';
 var allMusicList = [];
 var currentMusicName = '';
+var currentMusicIndex = -1;
 var isMusicPlaying = false;
 var musicPlayerCollapsed = false;
 var musicErrorCount = 0;
@@ -1384,6 +1511,7 @@ if (!isInIframe && !isIframeMode) {
     if (currentMusicName && code === 4) {
       allMusicList = allMusicList.filter(function(m) { return m.name !== currentMusicName; });
       currentMusicName = '';
+      currentMusicIndex = -1;
     }
     updateMusicUI();
     renderMusicList();
@@ -1445,6 +1573,7 @@ function playSpecificMusic(name, shouldPlay) {
   if (musicPlayLock) { bgmAudio.pause(); }
   musicPlayLock = true;
   currentMusicName = name;
+  currentMusicIndex = allMusicList.findIndex(function(m) { return m.name === name; });
   bgmAudio.src = '/api/music/serve?f=' + encodeURIComponent(name);
   bgmAudio.volume = parseInt(document.getElementById('music-volume').value) / 100;
   showMusicPlayer();
@@ -1487,8 +1616,26 @@ function playRandomMusic(shouldPlay) {
   const idx = Math.floor(Math.random() * allMusicList.length);
   playSpecificMusic(allMusicList[idx].name, shouldPlay);
 }
-function playPrevMusic() { playRandomMusic(); }
-function playNextMusic() { playRandomMusic(); }
+
+function playPrevMusic() {
+  if (!allMusicList.length) return;
+  if (currentMusicIndex < 0 || currentMusicIndex >= allMusicList.length) {
+    playRandomMusic();
+    return;
+  }
+  currentMusicIndex = (currentMusicIndex - 1 + allMusicList.length) % allMusicList.length;
+  playSpecificMusic(allMusicList[currentMusicIndex].name);
+}
+
+function playNextMusic() {
+  if (!allMusicList.length) return;
+  if (currentMusicIndex < 0 || currentMusicIndex >= allMusicList.length) {
+    playRandomMusic();
+    return;
+  }
+  currentMusicIndex = (currentMusicIndex + 1) % allMusicList.length;
+  playSpecificMusic(allMusicList[currentMusicIndex].name);
+}
 
 function togglePlayPause() {
   if (isIframeMode) {
@@ -1760,10 +1907,150 @@ async function initMusicForChapter() {
 }
 
 // 初始化画廊
+var currentFilter = 'all';
+var currentPage = 1;
+var itemsPerPage = 10;
+var filteredFiles = [];
+var preloadedPaths = new Set();
+var renderedThumbMap = {}; // path -> DOM element 缓存已渲染的缩略图
+
 function initGallery() {
   if (!files.length) return;
+  applyMediaFilter('all');
   updateMainDisplay();
-  renderThumbnails();
+}
+
+function getFilteredFiles(filter) {
+  if (filter === 'image') return files.filter(function(f) { return f.type === 'image'; });
+  if (filter === 'video') return files.filter(function(f) { return f.type === 'video'; });
+  // 默认：图片在前，视频在后
+  return files.filter(function(f) { return f.type === 'image'; }).concat(files.filter(function(f) { return f.type === 'video'; }));
+}
+
+function applyMediaFilter(filter) {
+  currentFilter = filter;
+  currentPage = 1;
+  filteredFiles = getFilteredFiles(filter);
+  preloadedPaths.clear();
+  renderedThumbMap = {}; // 切换筛选时清空缓存
+  document.getElementById('thumb-list').innerHTML = '';
+  // 自动切换到筛选后的第一个
+  if (filteredFiles.length > 0) {
+    currentIdx = files.indexOf(filteredFiles[0]);
+    if (currentIdx < 0) currentIdx = 0;
+  } else {
+    currentIdx = 0;
+  }
+  renderPage();
+  updateMainDisplay();
+}
+
+function goToPage(page) {
+  var totalPages = Math.ceil(filteredFiles.length / itemsPerPage) || 1;
+  if (page < 1 || page > totalPages) return;
+  currentPage = page;
+  // 切换到该页第一个
+  var startIdx = (currentPage - 1) * itemsPerPage;
+  if (startIdx < filteredFiles.length) {
+    var idx = files.indexOf(filteredFiles[startIdx]);
+    currentIdx = idx >= 0 ? idx : 0;
+  }
+  renderPage();
+  updateMainDisplay();
+}
+
+function renderPage() {
+  var totalPages = Math.ceil(filteredFiles.length / itemsPerPage) || 1;
+  if (currentPage > totalPages) currentPage = totalPages;
+  var start = (currentPage - 1) * itemsPerPage;
+  var end = Math.min(start + itemsPerPage, filteredFiles.length);
+
+  var list = document.getElementById('thumb-list');
+
+  // 先隐藏所有缩略图（用 visibility 而非 display，避免浏览器重新请求图片）
+  var allChildren = list.children;
+  for (var c = 0; c < allChildren.length; c++) {
+    allChildren[c].style.visibility = 'hidden';
+    allChildren[c].style.pointerEvents = 'none';
+    allChildren[c].style.position = 'absolute';
+  }
+
+  // 显示或创建当前页的缩略图
+  var html = '';
+  for (var i = start; i < end; i++) {
+    var f = filteredFiles[i];
+    if (!f) continue;
+    var origIdx = files.indexOf(f);
+    var active = origIdx === currentIdx;
+
+    if (renderedThumbMap[f.path]) {
+      // 已渲染过，显示并更新active状态
+      var el = renderedThumbMap[f.path];
+      el.style.visibility = '';
+      el.style.pointerEvents = '';
+      el.style.position = '';
+      el.className = 'thumb-item' + (active ? ' active' : '');
+    } else {
+      // 未渲染过，创建新元素
+      if (f.type === 'image') {
+        html += `<div class="thumb-item${active ? ' active' : ''}" data-thumb-path="${f.path}" onclick="currentIdx=${origIdx};updateMainDisplay();">
+          <img src="/file/${encodeURIComponent(f.path)}" alt="${f.name}" loading="lazy">
+        </div>`;
+      } else {
+        html += `<div class="thumb-item${active ? ' active' : ''}" data-thumb-path="${f.path}" onclick="currentIdx=${origIdx};updateMainDisplay();">
+          <video src="/file/${encodeURIComponent(f.path)}" preload="metadata"></video>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);font-size:14px;color:white;pointer-events:none;"><i class="fa fa-play"></i></div>
+        </div>`;
+      }
+    }
+  }
+
+  // 追加新缩略图到列表
+  if (html) {
+    var temp = document.createElement('div');
+    temp.innerHTML = html;
+    while (temp.firstChild) {
+      var child = temp.firstChild;
+      list.appendChild(child);
+      // 缓存
+      var path = child.getAttribute('data-thumb-path');
+      if (path) renderedThumbMap[path] = child;
+    }
+  }
+
+  document.getElementById('page-indicator').textContent = currentPage + ' / ' + totalPages;
+  document.getElementById('filter-count').textContent = filteredFiles.length + ' 项';
+
+  // 自动滚动到当前选中缩略图
+  var activeThumb = list.querySelector('.thumb-item.active');
+  if (activeThumb) {
+    activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+
+  // 预加载前后两页缩略图
+  preloadNeighborPages();
+}
+
+function preloadNeighborPages() {
+  var totalPages = Math.ceil(filteredFiles.length / itemsPerPage) || 1;
+  [currentPage - 1, currentPage + 1].forEach(function(p) {
+    if (p < 1 || p > totalPages) return;
+    var s = (p - 1) * itemsPerPage;
+    var e = Math.min(s + itemsPerPage, filteredFiles.length);
+    for (var i = s; i < e; i++) {
+      var f = filteredFiles[i];
+      if (!f || preloadedPaths.has(f.path)) continue;
+      preloadedPaths.add(f.path);
+      if (f.type === 'image') {
+        var img = new Image();
+        img.src = '/file/' + encodeURIComponent(f.path);
+      } else {
+        var vid = document.createElement('video');
+        vid.preload = 'auto';
+        vid.src = '/file/' + encodeURIComponent(f.path);
+      }
+    }
+  });
 }
 
 function updateMainDisplay() {
@@ -1818,34 +2105,29 @@ function updateMainDisplay() {
       </div>
     `;
   }
-  // 更新缩略图选中状态
-  document.querySelectorAll('.thumb-item').forEach((el, i) => {
-    el.classList.toggle('active', i === currentIdx);
-  });
-  // 滚动缩略图到可见
-  const activeThumb = document.querySelector('.thumb-item.active');
-  if (activeThumb) activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  // 只更新缩略图高亮，不重新渲染整页
+  updateThumbHighlight();
 }
 
-function renderThumbnails() {
-  const list = document.getElementById('thumb-list');
-  const html = files.map((f, i) => {
-    if (f.type === 'image') {
-      return `<div class="thumb-item${i === currentIdx ? ' active' : ''}" onclick="currentIdx=${i};updateMainDisplay();">
-        <img src="/file/${encodeURIComponent(f.path)}" alt="${f.name}" loading="lazy">
-      </div>`;
-    } else {
-      return `<div class="thumb-item${i === currentIdx ? ' active' : ''}" onclick="currentIdx=${i};updateMainDisplay();">
-        <video src="/file/${encodeURIComponent(f.path)}" preload="metadata"></video>
-        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);font-size:14px;color:white;pointer-events:none;"><i class="fa fa-play"></i></div>
-      </div>`;
-    }
-  }).join('');
-  list.innerHTML = html;
+function updateThumbHighlight() {
+  var list = document.getElementById('thumb-list');
+  if (!list || !list.children.length) return;
+  
+  // 只更新 active 状态，不重建 DOM
+  var items = list.querySelectorAll('.thumb-item');
+  for (var i = 0; i < items.length; i++) {
+    var item = items[i];
+    var path = item.getAttribute('data-thumb-path');
+    if (!path) continue;
+    var fIdx = filteredFiles.findIndex(function(f) { return f && f.path === path; });
+    if (fIdx < 0) continue;
+    var origIdx = files.indexOf(filteredFiles[fIdx]);
+    item.className = 'thumb-item' + (origIdx === currentIdx ? ' active' : '');
+  }
 }
 
-let navBusy = false;
-let pendingJumpUrl = null;
+var navBusy = false;
+var pendingJumpUrl = null;
 
 function showChapterJumpConfirm(message, url) {
   if (navBusy) return;
@@ -1865,6 +2147,43 @@ function showChapterJumpConfirm(message, url) {
 
 function navFile(dir) {
   if (!files.length || navBusy) return;
+  
+  // When filter is active, navigate within filtered files
+  if (currentFilter !== 'all' && filteredFiles.length > 0) {
+    var currentFilteredIdx = filteredFiles.indexOf(files[currentIdx]);
+    var nextFilteredIdx = currentFilteredIdx + dir;
+    if (nextFilteredIdx >= filteredFiles.length) {
+      const nextChapter = '{{ next_chapter or "" }}';
+      if (nextChapter) {
+        showChapterJumpConfirm('已是最后一张' + (currentFilter === 'image' ? '图片' : '视频') + '，是否前往下一章节「' + nextChapter + '」？', '/chapter/' + nextChapter);
+      } else {
+        toast('已经是最后一张了', true);
+      }
+      return;
+    }
+    if (nextFilteredIdx < 0) {
+      const prevChapter = '{{ prev_chapter or "" }}';
+      if (prevChapter) {
+        showChapterJumpConfirm('已是第一张' + (currentFilter === 'image' ? '图片' : '视频') + '，是否前往上一章节「' + prevChapter + '」？', '/chapter/' + prevChapter);
+      } else {
+        toast('已经是第一张了', true);
+      }
+      return;
+    }
+    var nextFile = filteredFiles[nextFilteredIdx];
+    currentIdx = files.indexOf(nextFile);
+    
+    // Auto-switch page if needed
+    var totalPages = Math.ceil(filteredFiles.length / itemsPerPage) || 1;
+    var newPage = Math.floor(nextFilteredIdx / itemsPerPage) + 1;
+    if (newPage !== currentPage) {
+      currentPage = newPage;
+    }
+    updateMainDisplay();
+    return;
+  }
+  
+  // Default: navigate all files
   const nextIdx = currentIdx + dir;
   if (dir === 1 && nextIdx >= files.length) {
     const nextChapter = '{{ next_chapter or "" }}';
@@ -1887,6 +2206,15 @@ function navFile(dir) {
     }
   }
   currentIdx = nextIdx;
+  
+  // Auto-switch page if needed
+  if (filteredFiles.length > 0) {
+    var totalPages = Math.ceil(filteredFiles.length / itemsPerPage) || 1;
+    var page = Math.floor(filteredFiles.indexOf(files[currentIdx]) / itemsPerPage) + 1;
+    if (page !== currentPage) {
+      currentPage = page;
+    }
+  }
   updateMainDisplay();
 }
 
@@ -1924,6 +2252,7 @@ function navLightbox(dir) {
   currentIdx = nextIdx;
   updateLightboxContent();
   renderLightboxThumbs();
+  updateLbThumbnailSrcs();
   updateMainDisplay();
 }
 function updateLightboxContent() {
@@ -1935,26 +2264,103 @@ function updateLightboxContent() {
     container.innerHTML = '<video src="/file/' + encodeURIComponent(f.path) + '" controls autoplay onclick="event.stopPropagation()" style="max-width:90vw;max-height:78vh;border-radius:8px;"></video>';
   }
 }
+var lbThumbLoadWindow = 15;
+
 function renderLightboxThumbs() {
   const container = document.getElementById('lb-thumbs');
-  container.innerHTML = files.map((f, i) => {
+  const html = files.map((f, i) => {
     const active = i === currentIdx ? ' active' : '';
     if (f.type === 'image') {
-      return `<div class="lb-thumb${active}" onclick="currentIdx=${i};updateLightboxContent();renderLightboxThumbs();updateMainDisplay();">
-        <img src="/file/${encodeURIComponent(f.path)}" loading="lazy">
+      return `<div class="lb-thumb${active}" data-lb-thumb-idx="${i}" onclick="currentIdx=${i};updateLightboxContent();renderLightboxThumbs();updateMainDisplay();">
+        <img loading="lazy">
       </div>`;
     } else {
-      return `<div class="lb-thumb${active}" onclick="currentIdx=${i};updateLightboxContent();renderLightboxThumbs();updateMainDisplay();">
-        <video src="/file/${encodeURIComponent(f.path)}" preload="metadata"></video>
+      return `<div class="lb-thumb${active}" data-lb-thumb-idx="${i}" onclick="currentIdx=${i};updateLightboxContent();renderLightboxThumbs();updateMainDisplay();">
+        <video preload="metadata"></video>
       </div>`;
     }
   }).join('');
+  container.innerHTML = html;
+
+  setupLbThumbObserver(container);
+}
+
+function setupLbThumbObserver(container) {
+  if (container._observer) container._observer.disconnect();
+  container._observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        loadLbThumbSource(entry.target);
+        container._observer.unobserve(entry.target);
+      }
+    });
+  }, { root: container, rootMargin: '200px' });
+
+  var items = container.querySelectorAll('.lb-thumb');
+  items.forEach(function(item) {
+    var idx = parseInt(item.dataset.lbThumbIdx);
+    var dist = Math.abs(idx - currentIdx);
+    if (dist <= lbThumbLoadWindow) {
+      loadLbThumbSource(item);
+    } else {
+      container._observer.observe(item);
+    }
+  });
+}
+
+function loadLbThumbSource(item) {
+  var idx = parseInt(item.dataset.lbThumbIdx);
+  if (isNaN(idx) || idx >= files.length) return;
+  var f = files[idx];
+  if (f.type === 'image') {
+    var img = item.querySelector('img');
+    if (img && !img.src) {
+      img.src = '/file/' + encodeURIComponent(f.path);
+    }
+  } else {
+    var vid = item.querySelector('video');
+    if (vid && !vid.src) {
+      vid.src = '/file/' + encodeURIComponent(f.path);
+    }
+  }
+}
+
+function updateLbThumbnailSrcs() {
+  var container = document.getElementById('lb-thumbs');
+  if (!container || !container._observer) return;
+  var items = container.querySelectorAll('.lb-thumb');
+  items.forEach(function(item) {
+    var idx = parseInt(item.dataset.lbThumbIdx);
+    var dist = Math.abs(idx - currentIdx);
+    if (dist <= lbThumbLoadWindow) {
+      container._observer.unobserve(item);
+      loadLbThumbSource(item);
+    }
+  });
 }
 
 // 视频全屏播放器
+var savedMusicState = null;
+
 function openVideoPlayer() {
   const f = files[currentIdx];
   if (!f || f.type !== 'video') return;
+  // 通知父窗口暂停音乐（iframe模式）
+  if (isInIframe) {
+    parent.postMessage({ type: 'video-playing', playing: true }, '*');
+    // iframe模式下隐藏章节页自己的音乐播放器
+    var mp = document.getElementById('music-player');
+    if (mp) mp.style.display = 'none';
+  }
+  // 本地音乐系统暂停（仅非iframe模式）
+  if (!isInIframe && !isIframeMode && bgmAudio && isMusicPlaying) {
+    savedMusicState = { playing: true, name: currentMusicName, volume: bgmAudio.volume };
+    bgmAudio.pause();
+    isMusicPlaying = false;
+    updateMusicUI();
+    var mc = document.querySelector('.music-controls');
+    if (mc) mc.style.display = 'none';
+  }
   const player = document.getElementById('video-player');
   const video = document.getElementById('vp-video');
   video.src = '/file/' + encodeURIComponent(f.path);
@@ -1971,6 +2377,24 @@ function closeVideoPlayer() {
   video.src = '';
   player.classList.remove('active');
   document.body.style.overflow = '';
+  // 恢复音乐播放器（仅非iframe模式）
+  if (!isInIframe && !isIframeMode && bgmAudio && savedMusicState && savedMusicState.playing) {
+    var mc = document.querySelector('.music-controls');
+    if (mc) mc.style.display = 'flex';
+    bgmAudio.volume = savedMusicState.volume;
+    if (savedMusicState.name) {
+      playSpecificMusic(savedMusicState.name, true);
+    } else {
+      playRandomMusic(true);
+    }
+  }
+  // iframe模式下恢复章节页自己的音乐播放器
+  if (isInIframe) {
+    var mp = document.getElementById('music-player');
+    if (mp) mp.style.display = 'flex';
+    parent.postMessage({ type: 'video-playing', playing: false }, '*');
+  }
+  savedMusicState = null;
 }
 function toggleVideoPlayPause() {
   const video = document.getElementById('vp-video');
@@ -2330,7 +2754,7 @@ async function loadEditAuthorSelect() {
 }
 
 function cancelEdit() {
-  document.getElementById('edit-area').value = `{{ md_content or '' }}`.replace(/&#39;/g, "'").replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  document.getElementById('edit-area').value = {{ md_content | tojson }}.replace(/&#39;/g, "'").replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
   toggleEdit();
 }
 function startNewArticle() {

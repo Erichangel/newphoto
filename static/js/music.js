@@ -2,6 +2,7 @@ var MusicPlayer = (function() {
   var audio = null;
   var allMusicList = [];
   var currentMusicName = '';
+  var currentIndex = -1;
   var isPlaying = false;
   var autoSwitch = true;
   var autoPlay = true;
@@ -64,6 +65,7 @@ var MusicPlayer = (function() {
       if (currentMusicName && code === 4) {
         allMusicList = allMusicList.filter(function(m) { return m.name !== currentMusicName; });
         currentMusicName = '';
+        currentIndex = -1;
       }
       clearTimeout(errorTimer);
       errorTimer = setTimeout(function() {
@@ -161,6 +163,7 @@ var MusicPlayer = (function() {
     if (playLock) { audio.pause(); }
     playLock = true;
     currentMusicName = name;
+    currentIndex = allMusicList.findIndex(function(m) { return m.name === name; });
     audio.src = '/api/music/serve?f=' + encodeURIComponent(name);
     var savedVolume = localStorage.getItem('musicVolume');
     audio.volume = savedVolume ? savedVolume / 100 : 0.5;
@@ -199,8 +202,26 @@ var MusicPlayer = (function() {
     var idx = Math.floor(Math.random() * allMusicList.length);
     playSpecificMusic(allMusicList[idx].name, shouldPlay);
   }
-  function playPrevMusic() { playRandomMusic(true); }
-  function playNextMusic() { playRandomMusic(true); }
+
+  function playPrevMusic() {
+    if (!allMusicList.length) return;
+    if (currentIndex < 0 || currentIndex >= allMusicList.length) {
+      playRandomMusic(true);
+      return;
+    }
+    currentIndex = (currentIndex - 1 + allMusicList.length) % allMusicList.length;
+    playSpecificMusic(allMusicList[currentIndex].name, true);
+  }
+
+  function playNextMusic() {
+    if (!allMusicList.length) return;
+    if (currentIndex < 0 || currentIndex >= allMusicList.length) {
+      playRandomMusic(true);
+      return;
+    }
+    currentIndex = (currentIndex + 1) % allMusicList.length;
+    playSpecificMusic(allMusicList[currentIndex].name, true);
+  }
 
   function togglePlayPause() {
     if (audio.error) {

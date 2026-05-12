@@ -172,7 +172,7 @@
   <iframe id="content-frame" src="/home" allow="autoplay"></iframe>
 
   <!-- 音乐播放器（永不刷新） -->
-  <audio id="bgm-audio" preload="auto" loop></audio>
+  <audio id="bgm-audio" preload="auto"></audio>
   <div id="music-player" class="music-player">
     <button class="music-icon" onclick="toggleMusicPlayer()" title="展开/收起"><i class="fa fa-music"></i></button>
     <div class="music-info">
@@ -268,6 +268,7 @@
 /* ========== Shell 音乐播放器系统 ========== */
 var allMusicList = [];
 var currentMusicName = '';
+var currentMusicIndex = -1;
 var isMusicPlaying = false;
 var musicErrorCount = 0;
 var musicErrorTimer = null;
@@ -281,8 +282,9 @@ var bgmAudio = document.getElementById('bgm-audio');
 var contentFrame = document.getElementById('content-frame');
 
 bgmAudio.addEventListener('ended', function() {
+  console.log('[shell] 歌曲播放完毕! 当前索引:', currentMusicIndex, 'loop:', bgmAudio.loop);
   musicErrorCount = 0;
-  if (!bgmAudio.loop) { playNextMusic(); }
+  playNextMusic();
 });
 bgmAudio.addEventListener('error', function() {
   var code = bgmAudio.error ? bgmAudio.error.code : 0;
@@ -299,6 +301,7 @@ bgmAudio.addEventListener('error', function() {
   if (currentMusicName && code === 4) {
     allMusicList = allMusicList.filter(function(m) { return m.name !== currentMusicName; });
     currentMusicName = '';
+    currentMusicIndex = -1;
   }
   updateMusicUI();
   renderMusicList();
@@ -427,6 +430,7 @@ function playSpecificMusic(name, shouldPlay) {
   if (musicPlayLock) { bgmAudio.pause(); }
   musicPlayLock = true;
   currentMusicName = name;
+  currentMusicIndex = allMusicList.findIndex(function(m) { return m.name === name; });
   bgmAudio.src = '/api/music/serve?f=' + encodeURIComponent(name);
   bgmAudio.volume = parseInt(document.getElementById('music-volume').value) / 100;
   showMusicPlayer();
@@ -468,8 +472,28 @@ function playRandomMusic(shouldPlay) {
   playSpecificMusic(allMusicList[idx].name, shouldPlay);
 }
 
-function playPrevMusic() { playRandomMusic(); }
-function playNextMusic() { playRandomMusic(); }
+function playPrevMusic() {
+  if (!allMusicList.length) return;
+  if (currentMusicIndex < 0 || currentMusicIndex >= allMusicList.length) {
+    playRandomMusic();
+    return;
+  }
+  currentMusicIndex = (currentMusicIndex - 1 + allMusicList.length) % allMusicList.length;
+  playSpecificMusic(allMusicList[currentMusicIndex].name);
+}
+
+function playNextMusic() {
+  console.log('[shell] playNextMusic 被调用, 当前索引:', currentMusicIndex, '列表长度:', allMusicList.length);
+  if (!allMusicList.length) return;
+  if (currentMusicIndex < 0 || currentMusicIndex >= allMusicList.length) {
+    console.log('[shell] 索引无效，随机播放');
+    playRandomMusic();
+    return;
+  }
+  currentMusicIndex = (currentMusicIndex + 1) % allMusicList.length;
+  console.log('[shell] 下一首索引:', currentMusicIndex, '歌曲名:', allMusicList[currentMusicIndex].name);
+  playSpecificMusic(allMusicList[currentMusicIndex].name);
+}
 
 function togglePlayPause() {
   if (bgmAudio.error) {
@@ -746,6 +770,26 @@ window.addEventListener('message', function(e) {
       break;
     case 'toggle-music':
       toggleMusicPlayer();
+      break;
+    case 'video-playing':
+      if (msg.playing) {
+        // 暂停音乐并隐藏整个播放器
+        bgmAudio.pause();
+        isMusicPlaying = false;
+        updateMusicUI();
+        var mp = document.getElementById('music-player');
+        if (mp) mp.style.display = 'none';
+      } else {
+        // 恢复音乐并显示整个播放器
+        bgmAudio.play().catch(function(){});
+        isMusicPlaying = true;
+        updateMusicUI();
+        var mp = document.getElementById('music-player');
+        if (mp) {
+          mp.style.display = 'flex';
+          mp.classList.remove('collapsed');
+        }
+      }
       break;
     case 'show-music-settings':
       showMusicSettings();

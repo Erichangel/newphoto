@@ -1336,6 +1336,6 @@ if __name__ == '__main__':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
     print(f'\n  时光印记（精简版）')
     print(f'  照片目录：{ROOT_DIR}')
-    print(f'  访问地址：http://localhost:5000\n')
+    print(f'  访问地址：http://localhost:5240\n')
     # 关闭 debug 模式，提高性能
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=5240, debug=False)

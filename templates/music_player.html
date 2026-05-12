@@ -30,6 +30,7 @@
 var channel = new BroadcastChannel('bgm_control');
 var allMusicList = [];
 var currentMusicName = '';
+var currentMusicIndex = -1;
 var isMusicPlaying = false;
 var musicErrorCount = 0;
 var musicErrorTimer = null;
@@ -85,6 +86,7 @@ bgmAudio.addEventListener('error', function() {
   if (currentMusicName && code === 4) {
     allMusicList = allMusicList.filter(function(m) { return m.name !== currentMusicName; });
     currentMusicName = '';
+    currentMusicIndex = -1;
   }
   clearTimeout(musicErrorTimer);
   musicErrorTimer = setTimeout(function() {
@@ -143,6 +145,7 @@ function playSpecificMusic(name, shouldPlay) {
   if (musicPlayLock) { bgmAudio.pause(); }
   musicPlayLock = true;
   currentMusicName = name;
+  currentMusicIndex = allMusicList.findIndex(function(m) { return m.name === name; });
   bgmAudio.src = '/api/music/serve?f=' + encodeURIComponent(name);
   bgmAudio.volume = parseInt(document.getElementById('music-volume').value) / 100;
   showPlayer();
@@ -181,8 +184,26 @@ function playRandomMusic(shouldPlay) {
   var idx = Math.floor(Math.random() * allMusicList.length);
   playSpecificMusic(allMusicList[idx].name, shouldPlay);
 }
-function playPrevMusic() { playRandomMusic(true); }
-function playNextMusic() { playRandomMusic(true); }
+
+function playPrevMusic() {
+  if (!allMusicList.length) return;
+  if (currentMusicIndex < 0 || currentMusicIndex >= allMusicList.length) {
+    playRandomMusic(true);
+    return;
+  }
+  currentMusicIndex = (currentMusicIndex - 1 + allMusicList.length) % allMusicList.length;
+  playSpecificMusic(allMusicList[currentMusicIndex].name, true);
+}
+
+function playNextMusic() {
+  if (!allMusicList.length) return;
+  if (currentMusicIndex < 0 || currentMusicIndex >= allMusicList.length) {
+    playRandomMusic(true);
+    return;
+  }
+  currentMusicIndex = (currentMusicIndex + 1) % allMusicList.length;
+  playSpecificMusic(allMusicList[currentMusicIndex].name, true);
+}
 
 function togglePlayPause() {
   if (bgmAudio.error) {

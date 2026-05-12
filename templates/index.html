@@ -1077,7 +1077,7 @@
 
   {% if not is_iframe %}
   <!-- 全局音乐播放器 -->
-  <audio id="bgm-audio" preload="auto" loop></audio>
+  <audio id="bgm-audio" preload="auto"></audio>
   <div id="music-player" class="music-player">
     <button class="music-icon" onclick="toggleMusicPlayer()" title="展开/收起"><i class="fa fa-music"></i></button>
     <div class="music-info">
@@ -1156,6 +1156,7 @@
     /* ========== 背景音乐系统 ========== */
     var allMusicList = [];
     var currentMusicName = '';
+    var currentMusicIndex = -1;
     var isMusicPlaying = false;
     var musicPlayerCollapsed = false;
     var musicErrorCount = 0;
@@ -1187,6 +1188,7 @@
         if (currentMusicName && code === 4) {
           allMusicList = allMusicList.filter(function(m) { return m.name !== currentMusicName; });
           currentMusicName = '';
+          currentMusicIndex = -1;
         }
         updateMusicUI();
         renderMusicList();
@@ -1234,6 +1236,7 @@
       if (musicPlayLock) { bgmAudio.pause(); }
       musicPlayLock = true;
       currentMusicName = name;
+      currentMusicIndex = allMusicList.findIndex(function(m) { return m.name === name; });
       bgmAudio.src = '/api/music/serve?f=' + encodeURIComponent(name);
       bgmAudio.volume = parseInt(document.getElementById('music-volume').value) / 100;
       showMusicPlayer();
@@ -1278,11 +1281,27 @@
       playSpecificMusic(allMusicList[randomIdx].name, shouldPlay);
     }
 
-    // 上一首（随机）
-    function playPrevMusic() { playRandomMusic(); }
+    // 上一首（顺序播放）
+    function playPrevMusic() {
+      if (!allMusicList.length) return;
+      if (currentMusicIndex < 0 || currentMusicIndex >= allMusicList.length) {
+        playRandomMusic();
+        return;
+      }
+      currentMusicIndex = (currentMusicIndex - 1 + allMusicList.length) % allMusicList.length;
+      playSpecificMusic(allMusicList[currentMusicIndex].name);
+    }
 
-    // 下一首（随机）
-    function playNextMusic() { playRandomMusic(); }
+    // 下一首（顺序播放）
+    function playNextMusic() {
+      if (!allMusicList.length) return;
+      if (currentMusicIndex < 0 || currentMusicIndex >= allMusicList.length) {
+        playRandomMusic();
+        return;
+      }
+      currentMusicIndex = (currentMusicIndex + 1) % allMusicList.length;
+      playSpecificMusic(allMusicList[currentMusicIndex].name);
+    }
 
     // 播放/暂停切换
     function togglePlayPause() {
