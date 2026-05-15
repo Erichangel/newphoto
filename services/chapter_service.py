@@ -29,6 +29,23 @@ def get_chapters():
             images = [f for f in files if os.path.splitext(f)[1].lower() in SUPPORTED_IMAGE]
             videos = [f for f in files if os.path.splitext(f)[1].lower() in SUPPORTED_VIDEO]
             md_file = next((f for f in files if f.lower().endswith('.md')), None)
+            
+            # 获取封面图片的修改时间（用于前端缓存破坏）
+            from services.thumb_service import get_chapter_cover
+            cover_mtime = None
+            custom_cover = get_chapter_cover(name)
+            if custom_cover and os.path.exists(custom_cover):
+                try:
+                    cover_mtime = int(os.path.getmtime(custom_cover))
+                except Exception:
+                    pass
+            elif images:
+                first_img = os.path.join(path, images[0])
+                try:
+                    cover_mtime = int(os.path.getmtime(first_img))
+                except Exception:
+                    pass
+            
             chapters.append({
                 'name': name,
                 'year': name[:4] if len(name) >= 4 and name[:4].isdigit() else '',
@@ -36,7 +53,8 @@ def get_chapters():
                 'image_count': len(images),
                 'video_count': len(videos),
                 'has_article': md_file is not None,
-                'cover': get_cover_thumb(path, images),
+                'cover': get_cover_thumb(name, path, images),
+                'cover_mtime': cover_mtime,
             })
     
     app_config.chapter_cache = chapters

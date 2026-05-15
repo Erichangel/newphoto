@@ -23,6 +23,12 @@ def api_create_user():
     if not name:
         return jsonify({'error': '用户名不能为空'}), 400
     
+    # 检查重名
+    existing = list_users()
+    for u in existing:
+        if u['name'] == name:
+            return jsonify({'error': '用户名已存在，请选择其他名称'}), 400
+    
     user_id, user_name = create_user(name)
     return jsonify({'ok': True, 'user_id': user_id, 'name': user_name})
 
@@ -41,8 +47,11 @@ def api_select_user():
 @user_api_bp.route('/current', methods=['GET'])
 def api_get_current_user():
     """获取当前用户信息"""
+    from services.user_service import get_current_user_id
+    user_id = get_current_user_id()
     user = get_current_user()
     if user:
+        user['id'] = user_id
         return jsonify({'ok': True, 'user': user})
     return jsonify({'ok': True, 'user': None})
 

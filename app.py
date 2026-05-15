@@ -60,7 +60,7 @@ def load_config():
     """从 config.txt 加载根目录和音乐目录"""
     cfg = os.path.join(os.path.dirname(__file__), 'config.txt')
     if os.path.exists(cfg):
-        with open(cfg, 'r') as f:
+        with open(cfg, 'r', encoding='utf-8-sig') as f:
             lines = f.read().strip().splitlines()
             if lines and os.path.isdir(lines[0].strip()):
                 config.root_dir = lines[0].strip()

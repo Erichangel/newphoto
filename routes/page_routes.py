@@ -18,6 +18,12 @@ def shell():
     return render_template('shell.html')
 
 
+@page_bp.route('/admin')
+def admin():
+    """后台管理页面"""
+    return render_template('admin.html')
+
+
 @page_bp.route('/home')
 def home():
     """首页内容 - 章节列表（在 iframe 中加载）"""
@@ -40,7 +46,7 @@ def chapter(name):
     if not folder_path:
         return '章节不存在', 404
     
-    files = get_files(folder_path)
+    files = get_files(folder_path, chapter_name=name)
     md_name, md_content = get_legacy_article(folder_path)
     chapters = get_chapters()
     
@@ -98,8 +104,8 @@ def serve_file(fpath):
         return '文件不存在', 404
     
     response = make_response(send_file(real, as_attachment=False, conditional=True))
-    response.headers['Cache-Control'] = 'public, max-age=3600'
-    response.headers['Expires'] = time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time() + 3600))
+    # 设置较短的缓存时间，确保文件修改后能尽快生效
+    response.headers['Cache-Control'] = 'public, max-age=60, must-revalidate'
     
     ext = __import__('os').path.splitext(real)[1].lower()
     mime_types = {

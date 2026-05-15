@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>后台管理 - 时光印记</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f0eb; color: #333; min-height: 100vh; }
+    .admin-header { background: linear-gradient(135deg, #E91E63, #FF6090); color: white; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(233,30,99,0.3); }
+    .admin-header h1 { font-size: 20px; font-weight: 600; }
+    .admin-header h1 i { margin-right: 8px; }
+    .admin-header a { color: white; text-decoration: none; padding: 8px 16px; border-radius: 8px; background: rgba(255,255,255,0.2); font-size: 13px; transition: background 0.2s; }
+    .admin-header a:hover { background: rgba(255,255,255,0.3); }
+    .admin-container { max-width: 1200px; margin: 24px auto; padding: 0 20px; }
+    .admin-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .admin-tab { padding: 10px 20px; border-radius: 10px; border: none; background: #fff; color: #666; cursor: pointer; font-size: 14px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.06); }
+    .admin-tab.active { background: linear-gradient(135deg, #E91E63, #FF6090); color: white; box-shadow: 0 4px 12px rgba(233,30,99,0.3); }
+    .admin-tab:hover:not(.active) { background: #fef0f5; color: #E91E63; }
+    .admin-panel { display: none; background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+    .admin-panel.active { display: block; }
+    .panel-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #fef0f5; color: #E91E63; }
+    .panel-title i { margin-right: 8px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; font-weight: 500; }
+    .form-group input, .form-group select { width: 100%; padding: 10px 14px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 14px; transition: border-color 0.2s; }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: #E91E63; }
+    .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-primary { background: linear-gradient(135deg, #E91E63, #FF6090); color: white; }
+    .btn-primary:hover { box-shadow: 0 4px 12px rgba(233,30,99,0.3); }
+    .btn-secondary { background: #f5f5f5; color: #666; }
+    .btn-secondary:hover { background: #eee; }
+    .btn-danger { background: #f44336; color: white; }
+    .btn-danger:hover { background: #d32f2f; }
+    .btn-success { background: #4CAF50; color: white; }
+    .btn-success:hover { background: #388E3C; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .table-container { overflow-x: auto; margin-top: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: #fef0f5; padding: 10px 14px; text-align: left; font-weight: 600; color: #E91E63; border-bottom: 2px solid #fce4ec; }
+    td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; }
+    tr:hover { background: #fef8fa; }
+    .badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; }
+    .badge-pink { background: #fce4ec; color: #E91E63; }
+    .badge-green { background: #e8f5e9; color: #4CAF50; }
+    .badge-orange { background: #fff3e0; color: #FF9800; }
+    .badge-blue { background: #e3f2fd; color: #2196F3; }
+    .status-msg { padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; display: none; }
+    .status-msg.success { background: #e8f5e9; color: #2e7d32; display: block; }
+    .status-msg.error { background: #fce4ec; color: #c62828; display: block; }
+    .chapter-item { display: flex; align-items: center; padding: 12px 16px; border: 1.5px solid #f0f0f0; border-radius: 10px; margin-bottom: 8px; transition: all 0.2s; }
+    .chapter-item:hover { border-color: #fce4ec; background: #fef8fa; }
+    .chapter-item .info { flex: 1; }
+    .chapter-item .info h4 { font-size: 14px; margin-bottom: 4px; }
+    .chapter-item .info p { font-size: 12px; color: #888; }
+    .chapter-item .actions { display: flex; gap: 6px; }
+    .music-item { display: flex; align-items: center; padding: 8px 12px; border-radius: 8px; margin-bottom: 4px; transition: background 0.15s; }
+    .music-item:hover { background: #fef0f5; }
+    .music-item i { color: #E91E63; margin-right: 8px; width: 20px; text-align: center; }
+    .music-item .name { flex: 1; font-size: 13px; }
+    .music-item .size { font-size: 12px; color: #888; }
+    .empty-state { text-align: center; padding: 40px 20px; color: #bbb; }
+    .empty-state i { font-size: 40px; margin-bottom: 12px; display: block; }
+    .config-card { background: #fef8fa; border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+    .config-card h4 { font-size: 14px; color: #E91E63; margin-bottom: 8px; }
+    .config-card p { font-size: 12px; color: #666; word-break: break-all; }
+    .inline-flex { display: flex; gap: 8px; align-items: flex-end; }
+    .inline-flex .form-group { flex: 1; margin-bottom: 0; }
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 8px; font-size: 13px; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    .toast.show { opacity: 1; }
+    .toast.error { background: #f44336; }
+    /* 文件管理增强样式 */
+    .file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; margin-top: 12px; }
+    .file-item { position: relative; border-radius: 10px; overflow: hidden; background: #fff; border: 1.5px solid #f0f0f0; transition: all 0.2s; cursor: pointer; }
+    .file-item:hover { border-color: #E91E63; box-shadow: 0 4px 12px rgba(233,30,99,0.15); }
+    .file-item.selected { border-color: #E91E63; box-shadow: 0 0 0 2px rgba(233,30,99,0.3); }
+    .file-item .thumb { width: 100%; height: 100px; object-fit: cover; display: block; }
+    .file-item .file-info { padding: 8px; font-size: 11px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-item .file-check { position: absolute; top: 6px; left: 6px; width: 20px; height: 20px; border-radius: 50%; background: rgba(255,255,255,0.9); border: 2px solid #ddd; display: flex; align-items: center; justify-content: center; font-size: 10px; color: transparent; transition: all 0.2s; }
+    .file-item.selected .file-check { background: #E91E63; border-color: #E91E63; color: white; }
+    .file-item .file-actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; opacity: 0; transition: opacity 0.2s; }
+    .file-item:hover .file-actions { opacity: 1; }
+    .file-item .file-actions button { width: 24px; height: 24px; border-radius: 50%; border: none; background: rgba(255,255,255,0.9); color: #666; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+    .file-item .file-actions button:hover { background: #E91E63; color: white; }
+    .file-item .file-actions button.del:hover { background: #f44336; }
+    .file-item.drag-over { border-color: #E91E63 !important; transform: scale(1.05); box-shadow: 0 0 0 3px rgba(233,30,99,0.4); }
+    .file-item.dragging { opacity: 0.4; }
+    .file-item.is-cover { border-color: #FFD700; box-shadow: 0 0 0 2px rgba(255,215,0,0.5); }
+    .file-item.is-cover .file-check { background: #FFD700; border-color: #FFD700; color: white; }
+    .cover-badge { position:absolute; top:4px; right:4px; background:rgba(255,215,0,0.9); color:#fff; font-size:9px; padding:2px 6px; border-radius:10px; font-weight:600; z-index:3; }
+    .batch-bar { display: none; align-items: center; gap: 12px; padding: 12px 16px; background: #fef0f5; border-radius: 10px; margin-bottom: 12px; }
+    .batch-bar.active { display: flex; }
+    .batch-bar .count { font-size: 13px; color: #E91E63; font-weight: 500; }
+    .batch-bar .btn { margin-left: auto; }
+    /* 预览弹窗 */
+    .preview-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10001; align-items: center; justify-content: center; }
+    .preview-overlay.active { display: flex; }
+    .preview-content { max-width: 90vw; max-height: 85vh; border-radius: 8px; overflow: hidden; }
+    .preview-content img, .preview-content video { max-width: 90vw; max-height: 85vh; object-fit: contain; }
+    .preview-close { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(255,255,255,0.2); color: white; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .preview-close:hover { background: rgba(255,255,255,0.4); }
+    .preview-filename { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: white; font-size: 14px; background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 20px; }
+  </style>
+</head>
+<body>
+  <div class="admin-header">
+    <h1><i class="fa fa-cogs"></i>后台管理 - 时光印记</h1>
+    <a href="/"><i class="fa fa-arrow-left"></i> 返回首页</a>
+  </div>
+
+  <div class="admin-container">
+    <div class="admin-tabs">
+      <button class="admin-tab active" onclick="switchTab('settings')"><i class="fa fa-cog"></i> 系统设置</button>
+      <button class="admin-tab" onclick="switchTab('chapters')"><i class="fa fa-folder"></i> 章节管理</button>
+      <button class="admin-tab" onclick="switchTab('music')"><i class="fa fa-music"></i> 音乐管理</button>
+      <button class="admin-tab" onclick="switchTab('users')"><i class="fa fa-users"></i> 用户管理</button>
+      <button class="admin-tab" onclick="switchTab('files')"><i class="fa fa-file"></i> 文件管理</button>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <!-- 系统设置 -->
+    <div id="panel-settings" class="admin-panel active">
+      <div class="panel-title"><i class="fa fa-cog"></i>系统设置</div>
+      <div id="settings-status" class="status-msg"></div>
+      
+      <div class="config-card">
+        <h4><i class="fa fa-image"></i> 照片根目录</h4>
+        <div class="inline-flex">
+          <div class="form-group" style="flex:1;">
+            <input type="text" id="setting-root-dir" placeholder="例如：K:\Pictures\照片库">
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="browseFolder('setting-root-dir')"><i class="fa fa-folder-open"></i></button>
+        </div>
+      </div>
+
+      <div class="config-card">
+        <h4><i class="fa fa-music"></i> 音乐文件夹</h4>
+        <div class="inline-flex">
+          <div class="form-group" style="flex:1;">
+            <input type="text" id="setting-music-dir" placeholder="例如：K:\Pictures\音乐">
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="browseFolder('setting-music-dir')"><i class="fa fa-folder-open"></i></button>
+        </div>
+      </div>
+
+      <div class="config-card">
+        <h4><i class="fa fa-info-circle"></i> 当前配置</h4>
+        <p>照片目录：<span id="current-root-dir">加载中...</span></p>
+        <p>音乐目录：<span id="current-music-dir">加载中...</span></p>
+      </div>
+
+      <div style="margin-top:16px; display:flex; gap:8px;">
+        <button class="btn btn-primary" onclick="saveSystemSettings()"><i class="fa fa-save"></i> 保存设置</button>
+        <button class="btn btn-secondary" onclick="loadSystemSettings()"><i class="fa fa-refresh"></i> 刷新</button>
+      </div>
+    </div>
+
+    <!-- 章节管理 -->
+    <div id="panel-chapters" class="admin-panel">
+      <div class="panel-title"><i class="fa fa-folder"></i>章节管理</div>
+      <div id="chapters-status" class="status-msg"></div>
+      
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <span style="font-size:13px; color:#888;">共 <strong id="chapter-count">0</strong> 个章节</span>
+        <button class="btn btn-primary btn-sm" onclick="showCreateChapter()"><i class="fa fa-plus"></i> 新建章节</button>
+      </div>
+
+      <div id="chapter-list">
+        <div class="empty-state"><i class="fa fa-spinner fa-spin"></i>加载中...</div>
+      </div>
+    </div>
+
+    <!-- 音乐管理 -->
+    <div id="panel-music" class="admin-panel">
+      <div class="panel-title"><i class="fa fa-music"></i>音乐管理</div>
+      <div id="music-status" class="status-msg"></div>
+
+      <div class="config-card">
+        <h4><i class="fa fa-sliders"></i> 全局音乐设置</h4>
+        <div style="display:flex; gap:20px; flex-wrap:wrap;">
+          <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">
+            <input type="checkbox" id="music-auto-switch" checked> 切换章节时自动换歌
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">
+            <input type="checkbox" id="music-auto-play" checked> 进入页面自动播放
+          </label>
+        </div>
+        <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="saveGlobalMusicSettings()"><i class="fa fa-save"></i> 保存</button>
+      </div>
+
+      <div class="config-card">
+        <h4><i class="fa fa-list"></i> 章节专属音乐</h4>
+        <div class="inline-flex" style="margin-bottom:10px;">
+          <div class="form-group" style="flex:1;">
+            <select id="music-chapter-select">
+              <option value="home">首页</option>
+              <option value="login">用户选择页</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:1;">
+            <select id="music-song-select">
+              <option value="">不指定（随机播放）</option>
+              <option value="__none__">不播放音乐</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="saveChapterMusic()"><i class="fa fa-save"></i> 保存</button>
+      </div>
+
+      <div class="config-card">
+        <h4><i class="fa fa-file-audio-o"></i> 可用音乐列表</h4>
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
+          <input type="file" id="music-upload-input" accept="audio/*" style="display:none;" onchange="uploadMusic(this)">
+          <button class="btn btn-primary btn-sm" onclick="document.getElementById('music-upload-input').click()"><i class="fa fa-upload"></i> 上传音乐</button>
+        </div>
+        <div id="music-list-container" style="max-height:300px; overflow-y:auto;">
+          <div class="empty-state"><i class="fa fa-spinner fa-spin"></i>加载中...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 用户管理 -->
+    <div id="panel-users" class="admin-panel">
+      <div class="panel-title"><i class="fa fa-users"></i>用户管理</div>
+      <div id="users-status" class="status-msg"></div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <span style="font-size:13px; color:#888;">共 <strong id="user-count">0</strong> 个用户</span>
+        <button class="btn btn-primary btn-sm" onclick="showCreateUser()"><i class="fa fa-user-plus"></i> 新建用户</button>
+      </div>
+
+      <div id="user-list">
+        <div class="empty-state"><i class="fa fa-spinner fa-spin"></i>加载中...</div>
+      </div>
+    </div>
+
+    <!-- 文件管理 -->
+    <div id="panel-files" class="admin-panel">
+      <div class="panel-title"><i class="fa fa-file"></i>文件管理</div>
+      <div id="files-status" class="status-msg"></div>
+
+      <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap;">
+        <div class="form-group" style="flex:1; min-width:200px; margin-bottom:0;">
+          <select id="files-chapter-select" onchange="loadChapterFiles()">
+            <option value="">请选择章节</option>
+          </select>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btn-select-all" style="display:none;" onclick="toggleSelectAll()"><i class="fa fa-check-square"></i> 全选</button>
+        <button class="btn btn-secondary btn-sm" id="btn-deselect-all" style="display:none;" onclick="deselectAll()"><i class="fa fa-square-o"></i> 取消全选</button>
+      </div>
+
+      <div id="batch-bar" class="batch-bar">
+        <span class="count">已选择 <strong id="selected-count">0</strong> 个文件</span>
+        <button class="btn btn-danger btn-sm" onclick="batchDeleteSelected()"><i class="fa fa-trash"></i> 批量删除</button>
+        <button class="btn btn-secondary btn-sm" onclick="deselectAll()"><i class="fa fa-times"></i> 取消选择</button>
+      </div>
+
+      <div id="file-stats" style="display:none; margin-bottom:12px; font-size:13px; color:#666;">
+        共 <strong id="file-count">0</strong> 个文件，
+        图片 <strong id="img-count">0</strong> 个，
+        视频 <strong id="vid-count">0</strong> 个
+      </div>
+
+      <div id="file-sort-hint" style="display:none; margin-bottom:12px; font-size:13px; color:#E91E63; background:#FFF0F5; padding:8px 12px; border-radius:8px; border:1px solid #FFCDD2;">
+        <i class="fa fa-info-circle"></i> 拖拽文件可以调整排序，排序结果将保存到服务器并在前端生效
+      </div>
+
+      <div id="file-list-container">
+        <div class="empty-state"><i class="fa fa-folder-open"></i>请选择章节查看文件</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 文件夹选择器 -->
+  <div id="folder-picker-overlay" style="display:none;"></div>
+
+  <!-- 创建章节弹窗 -->
+  <div id="modal-create-chapter" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:10000; display:none; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:16px; padding:24px; max-width:400px; width:90%; box-shadow:0 8px 40px rgba(0,0,0,0.3);">
+      <h3 style="margin:0 0 16px; font-size:16px;"><i class="fa fa-folder" style="color:#E91E63; margin-right:6px;"></i>新建章节</h3>
+      <div class="form-group">
+        <label>章节名称</label>
+        <input type="text" id="new-chapter-name" placeholder="例如：2024.01新年旅行">
+      </div>
+      <div class="form-group">
+        <label>年份</label>
+        <input type="number" id="new-chapter-year" placeholder="例如：2024" min="2000" max="2100">
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:16px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-create-chapter')">取消</button>
+        <button class="btn btn-primary" onclick="createChapter()"><i class="fa fa-plus"></i> 创建</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 创建用户弹窗 -->
+  <div id="modal-create-user" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:10000; display:none; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:16px; padding:24px; max-width:400px; width:90%; box-shadow:0 8px 40px rgba(0,0,0,0.3);">
+      <h3 style="margin:0 0 16px; font-size:16px;"><i class="fa fa-user" style="color:#E91E63; margin-right:6px;"></i>新建用户</h3>
+      <div class="form-group">
+        <label>用户名</label>
+        <input type="text" id="new-user-name" placeholder="例如：老公">
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:16px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-create-user')">取消</button>
+        <button class="btn btn-primary" onclick="createUser()"><i class="fa fa-user-plus"></i> 创建</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 重命名章节弹窗 -->
+  <div id="modal-rename-chapter" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:16px; padding:24px; max-width:400px; width:90%; box-shadow:0 8px 40px rgba(0,0,0,0.3);">
+      <h3 style="margin:0 0 16px; font-size:16px;"><i class="fa fa-pencil" style="color:#E91E63; margin-right:6px;"></i>重命名章节</h3>
+      <input type="hidden" id="rename-old-name">
+      <div class="form-group">
+        <label>新名称</label>
+        <input type="text" id="rename-new-name">
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:16px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-rename-chapter')">取消</button>
+        <button class="btn btn-primary" onclick="renameChapter()"><i class="fa fa-save"></i> 保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 预览弹窗 -->
+  <div id="preview-overlay" class="preview-overlay">
+    <button class="preview-close" onclick="closePreview()"><i class="fa fa-times"></i></button>
+    <div class="preview-content" id="preview-content"></div>
+    <div class="preview-filename" id="preview-filename"></div>
+  </div>
+
+  <!-- 确认删除弹窗 -->
+  <div id="modal-confirm-delete" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:16px; padding:24px; max-width:400px; width:90%; box-shadow:0 8px 40px rgba(0,0,0,0.3);">
+      <h3 style="margin:0 0 12px; font-size:16px; color:#f44336;"><i class="fa fa-exclamation-triangle"></i> 确认删除</h3>
+      <p id="delete-confirm-text" style="font-size:14px; color:#666; margin-bottom:16px;"></p>
+      <input type="hidden" id="delete-target-type">
+      <input type="hidden" id="delete-target-value">
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-confirm-delete')">取消</button>
+        <button class="btn btn-danger" onclick="confirmDelete()"><i class="fa fa-trash"></i> 删除</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Tab 切换
+    function switchTab(tab) {
+      document.querySelectorAll('.admin-tab').forEach(function(t) { t.classList.remove('active'); });
+      document.querySelectorAll('.admin-panel').forEach(function(p) { p.classList.remove('active'); });
+      event.target.closest('.admin-tab').classList.add('active');
+      document.getElementById('panel-' + tab).classList.add('active');
+      // 加载对应数据
+      if (tab === 'settings') loadSystemSettings();
+      if (tab === 'chapters') loadChapters();
+      if (tab === 'music') loadMusicPanel();
+      if (tab === 'users') loadUsers();
+      if (tab === 'files') loadChaptersForFileSelect();
+    }
+
+    // Toast 提示
+    function showToast(msg, isError) {
+      var toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.className = 'toast show' + (isError ? ' error' : '');
+      setTimeout(function() { toast.classList.remove('show'); }, 2500);
+    }
+
+    // 弹窗控制
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+    function openModal(id) {
+      document.getElementById(id).style.display = 'flex';
+    }
+
+    // ========== 系统设置 ==========
+    async function loadSystemSettings() {
+      try {
+        var res = await fetch('/api/settings');
+        var data = await res.json();
+        // 确保路径中的反斜杠正确显示（处理双反斜杠问题）
+        var rootDir = (data.root_dir || '').replace(/\\\\/g, '\\').replace(/\//g, '\\');
+        var musicDir = (data.music_dir || '').replace(/\\\\/g, '\\').replace(/\//g, '\\');
+        document.getElementById('setting-root-dir').value = rootDir;
+        document.getElementById('setting-music-dir').value = musicDir;
+        document.getElementById('current-root-dir').textContent = rootDir || '未设置';
+        document.getElementById('current-music-dir').textContent = musicDir || '未设置';
+      } catch(e) { showToast('加载设置失败', true); }
+    }
+
+    async function saveSystemSettings() {
+      var rootDir = document.getElementById('setting-root-dir').value.trim();
+      var musicDir = document.getElementById('setting-music-dir').value.trim();
+      try {
+        var res = await fetch('/api/settings', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ root_dir: rootDir, music_dir: musicDir })
+        });
+        var data = await res.json();
+        if (data.ok) {
+          showToast('设置保存成功');
+          loadSystemSettings();
+        } else {
+          showToast(data.error || '保存失败', true);
+        }
+      } catch(e) { showToast('保存失败', true); }
+    }
+
+    // ========== 章节管理 ==========
+    async function loadChapters() {
+      try {
+        var res = await fetch('/api/chapter');
+        var data = await res.json();
+        if (data.ok && data.chapters) {
+          document.getElementById('chapter-count').textContent = data.chapters.length;
+          var html = '';
+          if (data.chapters.length === 0) {
+            html = '<div class="empty-state"><i class="fa fa-folder-open"></i>暂无章节</div>';
+          } else {
+            data.chapters.forEach(function(ch) {
+              html += '<div class="chapter-item">' +
+                '<div class="info"><h4>' + ch.name + '</h4><p>' + (ch.year || '未设置年份') + '</p></div>' +
+                '<div class="actions">' +
+                '<button class="btn btn-secondary btn-sm" onclick="showRenameChapter(\'' + ch.name.replace(/'/g, "\\'") + '\')"><i class="fa fa-pencil"></i></button>' +
+                '<button class="btn btn-danger btn-sm" onclick="confirmDeleteChapter(\'' + ch.name.replace(/'/g, "\\'") + '\')"><i class="fa fa-trash"></i></button>' +
+                '</div></div>';
+            });
+          }
+          document.getElementById('chapter-list').innerHTML = html;
+        }
+      } catch(e) { showToast('加载章节失败', true); }
+    }
+
+    function showCreateChapter() {
+      document.getElementById('new-chapter-name').value = '';
+      document.getElementById('new-chapter-year').value = new Date().getFullYear();
+      openModal('modal-create-chapter');
+      setTimeout(function() { document.getElementById('new-chapter-name').focus(); }, 100);
+    }
+
+    async function createChapter() {
+      var name = document.getElementById('new-chapter-name').value.trim();
+      var year = document.getElementById('new-chapter-year').value;
+      if (!name) { showToast('请输入章节名称', true); return; }
+      try {
+        var res = await fetch('/api/chapter/create', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ name: name, year: year })
+        });
+        var data = await res.json();
+        if (data.ok) {
+          showToast('章节创建成功');
+          closeModal('modal-create-chapter');
+          loadChapters();
+        } else {
+          showToast(data.error || '创建失败', true);
+        }
+      } catch(e) { showToast('创建失败', true); }
+    }
+
+    function showRenameChapter(name) {
+      document.getElementById('rename-old-name').value = name;
+      document.getElementById('rename-new-name').value = name;
+      openModal('modal-rename-chapter');
+    }
+
+    async function renameChapter() {
+      var oldName = document.getElementById('rename-old-name').value;
+      var newName = document.getElementById('rename-new-name').value.trim();
+      if (!newName) { showToast('请输入新名称', true); return; }
+      try {
+        var res = await fetch('/api/chapter/rename', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ old_name: oldName, new_name: newName })
+        });
+        var data = await res.json();
+        if (data.ok) {
+          showToast('重命名成功');
+          closeModal('modal-rename-chapter');
+          loadChapters();
+        } else {
+          showToast(data.error || '重命名失败', true);
+        }
+      } catch(e) { showToast('重命名失败', true); }
+    }
+
+    function confirmDeleteChapter(name) {
+      document.getElementById('delete-target-type').value = 'chapter';
+      document.getElementById('delete-target-value').value = name;
+      document.getElementById('delete-confirm-text').textContent = '确定要删除章节 "' + name + '" 吗？此操作不可恢复！';
+      openModal('modal-confirm-delete');
+    }
+
+    async function confirmDelete() {
+      var type = document.getElementById('delete-target-type').value;
+      var value = document.getElementById('delete-target-value').value;
+      closeModal('modal-confirm-delete');
+      
+      if (type === 'chapter') {
+        try {
+          var res = await fetch('/api/chapter/delete', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name: value })
+          });
+          var data = await res.json();
+          if (data.ok) { showToast('删除成功'); loadChapters(); }
+          else showToast(data.error || '删除失败', true);
+        } catch(e) { showToast('删除失败', true); }
+      } else if (type === 'user') {
+        try {
+          var res = await fetch('/api/user/delete', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name: value })
+          });
+          var data = await res.json();
+          if (data.ok) { showToast('删除成功'); loadUsers(); }
+          else showToast(data.error || '删除失败', true);
+        } catch(e) { showToast('删除失败', true); }
+      }
+    }
+
+    // ========== 音乐管理 ==========
+    var allMusicList = [];
+
+    async function loadMusicPanel() {
+      loadMusicList();
+      loadChaptersForMusicSelect();
+      loadGlobalMusicSettings();
+    }
+
+    async function loadGlobalMusicSettings() {
+      try {
+        var res = await fetch('/api/music/settings');
+        var data = await res.json();
+        if (data.ok) {
+          document.getElementById('music-auto-switch').checked = data.settings.auto_switch !== false;
+          document.getElementById('music-auto-play').checked = data.settings.auto_play !== false;
+        }
+      } catch(e) {}
+    }
+
+    async function saveGlobalMusicSettings() {
+      var settings = {
+        auto_switch: document.getElementById('music-auto-switch').checked,
+        auto_play: document.getElementById('music-auto-play').checked
+      };
+      try {
+        var res = await fetch('/api/music/settings', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ settings: settings })
+        });
+        var data = await res.json();
+        if (data.ok) showToast('音乐设置保存成功');
+        else showToast('保存失败', true);
+      } catch(e) { showToast('保存失败', true); }
+    }
+
+    async function loadChaptersForMusicSelect() {
+      var select = document.getElementById('music-chapter-select');
+      try {
+        var res = await fetch('/api/chapter');
+        var data = await res.json();
+        if (data.ok && data.chapters) {
+          var html = '<option value="home">首页</option><option value="login">用户选择页</option>';
+          data.chapters.forEach(function(ch) {
+            html += '<option value="' + ch.name + '">' + ch.name + '</option>';
+          });
+          select.innerHTML = html;
+          select.value = 'home';
+          onMusicChapterChange();
+        }
+      } catch(e) {}
+    }
+
+    async function onMusicChapterChange() {
+      var chapter = document.getElementById('music-chapter-select').value;
+      var songSelect = document.getElementById('music-song-select');
+      
+      try {
+        var res = await fetch('/api/chapter/music?chapter=' + encodeURIComponent(chapter));
+        var data = await res.json();
+        if (data.ok && data.music) {
+          songSelect.value = data.music;
+        } else {
+          songSelect.value = '';
+        }
+      } catch(e) { songSelect.value = ''; }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('music-chapter-select').addEventListener('change', onMusicChapterChange);
+    });
+
+    async function saveChapterMusic() {
+      var chapter = document.getElementById('music-chapter-select').value;
+      var music = document.getElementById('music-song-select').value;
+      try {
+        var res = await fetch('/api/chapter/music', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ chapter: chapter, music: music })
+        });
+        var data = await res.json();
+        if (data.ok) showToast('音乐设置保存成功');
+        else showToast('保存失败', true);
+      } catch(e) { showToast('保存失败', true); }
+    }
+
+    async function loadMusicList() {
+      try {
+        var res = await fetch('/api/music/list');
+        var data = await res.json();
+        var songSelect = document.getElementById('music-song-select');
+        var options = '<option value="">不指定（随机播放）</option><option value="__none__">不播放音乐</option>';
+        
+        if (data.ok && data.musics) {
+          allMusicList = data.musics;
+          var container = document.getElementById('music-list-container');
+          
+          if (allMusicList.length === 0) {
+            container.innerHTML = '<div class="empty-state"><i class="fa fa-music"></i>暂无音乐文件<br><span style="font-size:12px;">将音乐放入音乐文件夹即可使用</span></div>';
+          } else {
+            var html = '';
+            allMusicList.forEach(function(m, idx) {
+              var safeName = m.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+              html += '<div class="music-item"><i class="fa fa-music"></i><span class="name">' + m.name + '</span><span class="size">' + m.size + '</span><button class="btn btn-danger btn-sm" style="padding:2px 8px;" onclick="deleteMusic(\'' + safeName + '\')" title="删除"><i class="fa fa-trash"></i></button></div>';
+              options += '<option value="' + m.name + '">' + m.name + '</option>';
+            });
+            container.innerHTML = html;
+          }
+          
+          songSelect.innerHTML = options;
+        } else {
+          document.getElementById('music-list-container').innerHTML = '<div class="empty-state"><i class="fa fa-exclamation-circle"></i>加载失败</div>';
+          songSelect.innerHTML = options;
+        }
+      } catch(e) {
+        document.getElementById('music-list-container').innerHTML = '<div class="empty-state"><i class="fa fa-exclamation-circle"></i>网络错误</div>';
+        var songSelect = document.getElementById('music-song-select');
+        if (songSelect) {
+          songSelect.innerHTML = '<option value="">不指定（随机播放）</option><option value="__none__">不播放音乐</option>';
+        }
+      }
+    }
+
+    // 上传音乐
+    async function uploadMusic(input) {
+      var file = input.files[0];
+      if (!file) return;
+      
+      var formData = new FormData();
+      formData.append('file', file);
+      
+      try {
+        showToast('正在上传...');
+        var res = await fetch('/api/music/upload', {
+          method: 'POST',
+          body: formData
+        });
+        var data = await res.json();
+        if (data.ok) {
+          showToast('上传成功: ' + data.name);
+          loadMusicList();
+        } else {
+          showToast(data.error || '上传失败', true);
+        }
+      } catch(e) { showToast('上传失败', true); }
+      input.value = '';
+    }
+
+    // 删除音乐
+    async function deleteMusic(name) {
+      if (!confirm('确定要删除音乐 "' + name + '" 吗？')) return;
+      
+      try {
+        var res = await fetch('/api/music/delete', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ name: name })
+        });
+        var data = await res.json();
+        if (data.ok) {
+          showToast('删除成功');
+          loadMusicList();
+        } else {
+          showToast(data.error || '删除失败', true);
+        }
+      } catch(e) { showToast('删除失败', true); }
+    }
+
+    // ========== 用户管理 ==========
+    async function loadUsers() {
+      try {
+        var res = await fetch('/api/user/list');
+        var data = await res.json();
+        if (data.ok && data.users) {
+          document.getElementById('user-count').textContent = data.users.length;
+          var html = '';
+          if (data.users.length === 0) {
+            html = '<div class="empty-state"><i class="fa fa-user"></i>暂无用户</div>';
+          } else {
+            data.users.forEach(function(u) {
+              html += '<div class="chapter-item">' +
+                '<div class="info"><h4>' + u.name + '</h4><p>ID: ' + u.id + ' · 上次章节：' + (u.last_chapter || '无') + '</p></div>' +
+                '<div class="actions">' +
+                '<button class="btn btn-danger btn-sm" onclick="confirmDeleteUser(\'' + u.id + '\', \'' + u.name.replace(/'/g, "\\'") + '\')"><i class="fa fa-trash"></i></button>' +
+                '</div></div>';
+            });
+          }
+          document.getElementById('user-list').innerHTML = html;
+        }
+      } catch(e) { showToast('加载用户失败', true); }
+    }
+
+    function showCreateUser() {
+      document.getElementById('new-user-name').value = '';
+      openModal('modal-create-user');
+      setTimeout(function() { document.getElementById('new-user-name').focus(); }, 100);
+    }
+
+    async function createUser() {
+      var name = document.getElementById('new-user-name').value.trim();
+      if (!name) { showToast('请输入用户名', true); return; }
+      try {
+        var res = await fetch('/api/user/create', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ name: name })
+        });
+        var data = await res.json();
+        if (data.ok) {
+          showToast('用户创建成功');
+          closeModal('modal-create-user');
+          loadUsers();
+        } else {
+          showToast(data.error || '创建失败', true);
+        }
+      } catch(e) { showToast('创建失败', true); }
+    }
+
+    function confirmDeleteUser(userId, name) {
+      document.getElementById('delete-target-type').value = 'user';
+      document.getElementById('delete-target-value').value = userId;
+      document.getElementById('delete-confirm-text').textContent = '确定要删除用户 "' + name + '" 吗？';
+      openModal('modal-confirm-delete');
+    }
+
+    // ========== 文件管理 ==========
+    var currentFiles = [];
+    var selectedFiles = new Set();
+
+    async function loadChaptersForFileSelect() {
+      var select = document.getElementById('files-chapter-select');
+      try {
+        var res = await fetch('/api/chapter');
+        var data = await res.json();
+        if (data.ok && data.chapters) {
+          var html = '<option value="">请选择章节</option>';
+          data.chapters.forEach(function(ch) {
+            html += '<option value="' + ch.name + '">' + ch.name + '</option>';
+          });
+          select.innerHTML = html;
+        }
+      } catch(e) {}
+    }
+
+    async function loadChapterFiles() {
+      var chapter = document.getElementById('files-chapter-select').value;
+      if (!chapter) {
+        document.getElementById('file-list-container').innerHTML = '<div class="empty-state"><i class="fa fa-folder-open"></i>请选择章节查看文件</div>';
+        document.getElementById('file-stats').style.display = 'none';
+        document.getElementById('batch-bar').classList.remove('active');
+        document.getElementById('btn-select-all').style.display = 'none';
+        document.getElementById('btn-deselect-all').style.display = 'none';
+        currentFiles = [];
+        selectedFiles.clear();
+        return;
+      }
+      
+      try {
+        var res = await fetch('/api/file/list?chapter=' + encodeURIComponent(chapter));
+        var data = await res.json();
+        if (data.ok && data.files) {
+          currentFiles = data.files;
+          selectedFiles.clear();
+          var imgCount = currentFiles.filter(function(f) { return f.type === 'image'; }).length;
+          var vidCount = currentFiles.filter(function(f) { return f.type === 'video'; }).length;
+          
+          document.getElementById('file-count').textContent = currentFiles.length;
+          document.getElementById('img-count').textContent = imgCount;
+          document.getElementById('vid-count').textContent = vidCount;
+          document.getElementById('file-stats').style.display = 'block';
+          document.getElementById('btn-select-all').style.display = 'inline-flex';
+          document.getElementById('btn-deselect-all').style.display = 'inline-flex';
+          updateBatchBar();
+          
+          // 获取当前封面信息
+          var coverPath = data.cover || '';
+          var coverName = '';
+          if (coverPath) {
+            coverName = coverPath.split(/[\/\\]/).pop();
+          }
+          
+          // 使用网格视图显示文件（支持拖拽排序）
+          var html = '<div class="file-grid" id="file-grid">';
+          currentFiles.forEach(function(f, idx) {
+            var isImage = f.type === 'image';
+            var thumbUrl = isImage ? '/file/' + encodeURIComponent(f.path) : '';
+            var isCover = (f.name === coverName) && isImage;
+            var coverBadge = isCover ? '<span class="cover-badge"><i class="fa fa-star"></i> 封面</span>' : '';
+            var coverClass = isCover ? ' is-cover' : '';
+            var safeName = f.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+            var safeChapter = chapter.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+            
+            html += '<div class="file-item' + coverClass + '" draggable="true" data-file-idx="' + idx + '" data-file-name="' + f.name.replace(/"/g, '&quot;') + '" onclick="toggleFileSelect(event, ' + idx + ')" ondblclick="previewFile(' + idx + ')">' +
+              coverBadge +
+              '<div class="file-check"><i class="fa fa-check"></i></div>' +
+              '<div class="file-drag-handle" style="position:absolute;top:4px;left:4px;color:rgba(255,255,255,0.7);font-size:14px;cursor:grab;z-index:2;" title="拖拽排序"><i class="fa fa-arrows"></i></div>' +
+              '<div class="file-actions">' +
+              '<button onclick="event.stopPropagation(); previewFile(' + idx + ')" title="预览"><i class="fa fa-eye"></i></button>' +
+              (isImage ? '<button onclick="event.stopPropagation(); setCover(\'' + safeChapter + '\', \'' + safeName + '\', ' + idx + ')" title="设为封面"><i class="fa fa-star-o"></i></button>' : '') +
+              '<button class="del" onclick="event.stopPropagation(); deleteFile(\'' + safeChapter + '\', \'' + safeName + '\')" title="删除"><i class="fa fa-trash"></i></button>' +
+              '</div>';
+            if (isImage) {
+              html += '<img class="thumb" src="' + thumbUrl + '" alt="' + f.name + '" loading="lazy">';
+            } else {
+              html += '<div style="width:100%;height:100px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;"><i class="fa fa-file-video-o" style="font-size:32px;color:#ccc;"></i></div>';
+            }
+            html += '<div class="file-info" title="' + f.name + '">' + f.name + '</div></div>';
+          });
+          html += '</div>';
+          document.getElementById('file-list-container').innerHTML = html;
+          
+          // 初始化拖拽排序
+          initFileDragSort();
+        } else {
+          document.getElementById('file-list-container').innerHTML = '<div class="empty-state"><i class="fa fa-exclamation-circle"></i>加载失败</div>';
+        }
+      } catch(e) {
+        document.getElementById('file-list-container').innerHTML = '<div class="empty-state"><i class="fa fa-exclamation-circle"></i>网络错误</div>';
+      }
+    }
+
+    function toggleFileSelect(event, idx) {
+      if (event.target.closest('.file-actions')) return;
+      var item = document.querySelector('.file-item[data-file-idx="' + idx + '"]');
+      if (selectedFiles.has(idx)) {
+        selectedFiles.delete(idx);
+        item.classList.remove('selected');
+      } else {
+        selectedFiles.add(idx);
+        item.classList.add('selected');
+      }
+      updateBatchBar();
+    }
+
+    function toggleSelectAll() {
+      var allSelected = selectedFiles.size === currentFiles.length;
+      if (allSelected) {
+        deselectAll();
+      } else {
+        currentFiles.forEach(function(f, idx) {
+          selectedFiles.add(idx);
+          var item = document.querySelector('.file-item[data-file-idx="' + idx + '"]');
+          if (item) item.classList.add('selected');
+        });
+        updateBatchBar();
+      }
+    }
+
+    function deselectAll() {
+      selectedFiles.clear();
+      document.querySelectorAll('.file-item').forEach(function(item) {
+        item.classList.remove('selected');
+      });
+      updateBatchBar();
+    }
+
+    function updateBatchBar() {
+      var count = selectedFiles.size;
+      document.getElementById('selected-count').textContent = count;
+      if (count > 0) {
+        document.getElementById('batch-bar').classList.add('active');
+      } else {
+        document.getElementById('batch-bar').classList.remove('active');
+      }
+    }
+
+    // ========== 拖拽排序功能 ==========
+    var dragSrcEl = null;
+
+    function initFileDragSort() {
+      var grid = document.getElementById('file-grid');
+      if (!grid) return;
+
+      var items = grid.querySelectorAll('.file-item');
+      items.forEach(function(item) {
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragover', handleDragOver);
+        item.addEventListener('dragenter', handleDragEnter);
+        item.addEventListener('dragleave', handleDragLeave);
+        item.addEventListener('drop', handleDrop);
+        item.addEventListener('dragend', handleDragEnd);
+      });
+    }
+
+    function handleDragStart(e) {
+      // 如果点击的是操作按钮或复选框，不允许拖拽
+      if (e.target.closest('.file-actions') || e.target.closest('.file-check')) {
+        e.preventDefault();
+        return;
+      }
+      dragSrcEl = this;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/html', this.innerHTML);
+      this.style.opacity = '0.5';
+    }
+
+    function handleDragOver(e) {
+      if (e.preventDefault) e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      return false;
+    }
+
+    function handleDragEnter(e) {
+      this.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+      this.classList.remove('drag-over');
+    }
+
+    function handleDrop(e) {
+      if (e.stopPropagation) e.stopPropagation();
+      if (dragSrcEl !== this) {
+        // 交换两个元素的位置
+        var grid = document.getElementById('file-grid');
+        var allItems = Array.from(grid.querySelectorAll('.file-item'));
+        var srcIdx = allItems.indexOf(dragSrcEl);
+        var targetIdx = allItems.indexOf(this);
+        
+        if (srcIdx < targetIdx) {
+          this.parentNode.insertBefore(dragSrcEl, this.nextSibling);
+        } else {
+          this.parentNode.insertBefore(dragSrcEl, this);
+        }
+        
+        // 更新 currentFiles 顺序
+        var newOrder = [];
+        grid.querySelectorAll('.file-item').forEach(function(item) {
+          var name = item.getAttribute('data-file-name');
+          newOrder.push(name);
+        });
+        currentFiles.sort(function(a, b) {
+          return newOrder.indexOf(a.name) - newOrder.indexOf(b.name);
+        });
+        
+        // 保存排序到服务器
+        saveFileOrder(newOrder);
+      }
+      return false;
+    }
+
+    function handleDragEnd(e) {
+      this.style.opacity = '1';
+      document.querySelectorAll('.file-item').forEach(function(item) {
+        item.classList.remove('drag-over');
+      });
+    }
+
+    // 保存文件排序到服务器
+    async function saveFileOrder(order) {
+      var chapter = document.getElementById('files-chapter-select').value;
+      if (!chapter || !order.length) return;
+      
+      try {
+        await fetch('/api/file/order', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ chapter: chapter, order: order })
+        });
+        // 跨标签页通知：通过 localStorage 触发其他标签页刷新封面
+        try {
+          localStorage.setItem('_time_imprint_refresh_cover', JSON.stringify({ chapter: chapter, ts: Date.now() }));
+        } catch(e) {}
+      } catch(e) {
+        console.error('保存文件排序失败:', e);
+      }
+    }
+
+    async function batchDeleteSelected() {
+      if (selectedFiles.size === 0) return;
+      if (!confirm('确定要删除选中的 ' + selectedFiles.size + ' 个文件吗？此操作不可恢复！')) return;
+      
+      var chapter = document.getElementById('files-chapter-select').value;
+      var toDelete = [];
+      selectedFiles.forEach(function(idx) {
+        if (currentFiles[idx]) {
+          toDelete.push(chapter + '/' + currentFiles[idx].name);
+        }
+      });
+      
+      var successCount = 0;
+      var failCount = 0;
+      for (var i = 0; i < toDelete.length; i++) {
+        try {
+          var res = await fetch('/api/file/delete', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ path: toDelete[i] })
+          });
+          var data = await res.json();
+          if (data.ok) successCount++;
+          else failCount++;
+        } catch(e) {
+          failCount++;
+        }
+      }
+      
+      showToast('删除完成：成功 ' + successCount + ' 个，失败 ' + failCount + ' 个');
+      selectedFiles.clear();
+      loadChapterFiles();
+    }
+
+    async function deleteFile(chapter, filename) {
+      if (!confirm('确定要删除 "' + filename + '" 吗？')) return;
+      var filePath = chapter + '/' + filename;
+      try {
+        var res = await fetch('/api/file/delete', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ path: filePath })
+        });
+        var data = await res.json();
+        if (data.ok) {
+          showToast('删除成功');
+          loadChapterFiles();
+        } else {
+          showToast(data.error || '删除失败', true);
+        }
+      } catch(e) { showToast('删除失败', true); }
+    }
+
+    // 设为章节封面
+    async function setCover(chapter, filename, idx) {
+      // 使用 API 返回的完整路径，确保路径正确
+      var filePath = currentFiles[idx] ? currentFiles[idx].path : (chapter + '\\' + filename);
+      try {
+        var res = await fetch('/api/file/set-cover', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ chapter: chapter, path: filePath, action: 'set' })
+        });
+        var data = await res.json();
+        if (data.ok) {
+          showToast('已设为章节封面');
+          // 跨标签页通知首页刷新封面
+          try {
+            localStorage.setItem('_time_imprint_refresh_cover', JSON.stringify({ chapter: chapter, ts: Date.now() }));
+          } catch(e) {}
+          // 刷新列表以更新封面标记
+          loadChapterFiles();
+        } else {
+          showToast(data.error || '设置封面失败', true);
+        }
+      } catch(e) { showToast('设置封面失败', true); }
+    }
+
+    function previewFile(idx) {
+      var f = currentFiles[idx];
+      if (!f) return;
+      var overlay = document.getElementById('preview-overlay');
+      var content = document.getElementById('preview-content');
+      var filename = document.getElementById('preview-filename');
+      
+      if (f.type === 'image') {
+        content.innerHTML = '<img src="/file/' + encodeURIComponent(f.path) + '" alt="' + f.name + '">';
+      } else {
+        content.innerHTML = '<video src="/file/' + encodeURIComponent(f.path) + '" controls autoplay style="max-width:90vw;max-height:85vh;"></video>';
+      }
+      filename.textContent = f.name;
+      overlay.classList.add('active');
+    }
+
+    function closePreview() {
+      var overlay = document.getElementById('preview-overlay');
+      overlay.classList.remove('active');
+      var content = document.getElementById('preview-content');
+      var video = content.querySelector('video');
+      if (video) video.pause();
+      content.innerHTML = '';
+    }
+
+    // ========== 文件夹选择器 ==========
+    var folderPickerTargetId = '';
+
+    function browseFolder(inputId) {
+      folderPickerTargetId = inputId;
+      var input = document.getElementById(inputId);
+      var currentVal = input ? input.value.trim() : '';
+      var browsePath = '';
+      if (currentVal && currentVal.indexOf('\\') !== -1) {
+        var parts = currentVal.split('\\');
+        parts.pop();
+        browsePath = parts.join('\\');
+      }
+      showFolderPicker(browsePath);
+    }
+
+    function showFolderPicker(path) {
+      var overlay = document.getElementById('folder-picker-overlay');
+      overlay.style.display = 'flex';
+      overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:10000;align-items:center;justify-content:center;';
+      overlay.onclick = function(e) { if (e.target === overlay) overlay.style.display = 'none'; };
+      
+      overlay.innerHTML = '<div style="background:#fff;border-radius:16px;padding:24px;max-width:480px;width:90%;max-height:70vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.3);">' +
+        '<h3 style="margin:0 0 4px;font-size:16px;color:#333;"><i class="fa fa-folder-open" style="color:#E91E63;margin-right:6px;"></i>选择文件夹</h3>' +
+        '<div id="fp-path" style="padding:8px;font-size:12px;color:#888;background:#f5f5f5;border-radius:8px;margin-bottom:12px;word-break:break-all;">加载中...</div>' +
+        '<div id="fp-list" style="flex:1;overflow-y:auto;min-height:200px;max-height:400px;"></div>' +
+        '<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">' +
+        '<button id="fp-up" style="padding:8px 16px;border-radius:8px;border:1.5px solid #ddd;background:#fff;color:#555;cursor:pointer;font-size:13px;"><i class="fa fa-arrow-up"></i> 返回上级</button> ' +
+        '<button onclick="document.getElementById(\'folder-picker-overlay\').style.display=\'none\'" style="padding:8px 20px;border-radius:8px;border:none;background:#eee;color:#555;cursor:pointer;font-size:13px;">取消</button></div></div>';
+      
+      loadFolderList(path || '');
+    }
+
+    var fpCurrentPath = '';
+
+    async function loadFolderList(path) {
+      var listEl = document.getElementById('fp-list');
+      var pathEl = document.getElementById('fp-path');
+      var upBtn = document.getElementById('fp-up');
+      if (!listEl) return;
+      
+      listEl.innerHTML = '<div style="padding:30px;text-align:center;color:#bbb;"><i class="fa fa-spinner fa-spin" style="font-size:20px;"></i><div style="margin-top:8px;font-size:13px;">加载中...</div></div>';
+      
+      try {
+        var url = '/api/browsefolders';
+        if (path) url += '?path=' + encodeURIComponent(path);
+        var res = await fetch(url);
+        var data = await res.json();
+        
+        if (data.ok) {
+          fpCurrentPath = data.current_path;
+          pathEl.textContent = data.current_path;
+          
+          upBtn.onclick = function() {
+            var cur = fpCurrentPath.replace(/[/\\]+$/, '');
+            var sepIdx = Math.max(cur.lastIndexOf('/'), cur.lastIndexOf('\\'));
+            if (sepIdx > 2) {
+              loadFolderList(cur.substring(0, sepIdx));
+            } else if (cur.length > 2) {
+              loadFolderList(cur.substring(0, 3));
+            }
+          };
+          
+          if (data.folders.length === 0) {
+            listEl.innerHTML = '<div style="padding:30px;text-align:center;color:#bbb;font-size:13px;">此目录下没有子文件夹</div>';
+            return;
+          }
+          
+          var html = '';
+          data.folders.forEach(function(f) {
+            var safePath = f.full_path.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            html += '<div onclick="pickFolder(\'' + safePath + '\')" style="display:flex;align-items:center;padding:10px 14px;cursor:pointer;border-radius:8px;margin-bottom:2px;transition:background 0.15s;" onmouseover="this.style.background=\'#fef0f5\'" onmouseout="this.style.background=\'\'">' +
+              '<i class="fa fa-folder" style="color:#FFB74D;margin-right:10px;font-size:16px;width:20px;text-align:center;"></i>' +
+              '<span style="flex:1;font-size:14px;color:#333;">' + f.name + '</span>' +
+              '<i class="fa fa-chevron-right" style="color:#ccc;font-size:11px;"></i></div>';
+          });
+          listEl.innerHTML = html;
+        }
+      } catch(e) {
+        listEl.innerHTML = '<div style="padding:30px;text-align:center;color:#E91E63;font-size:13px;">网络错误</div>';
+      }
+    }
+
+    function pickFolder(fullPath) {
+      var input = document.getElementById(folderPickerTargetId);
+      if (input) input.value = fullPath;
+      document.getElementById('folder-picker-overlay').style.display = 'none';
+    }
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      loadSystemSettings();
+    });
+  </script>
+</body>
+</html>

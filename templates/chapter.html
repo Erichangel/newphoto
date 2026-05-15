@@ -771,7 +771,7 @@
   /* Toast */
   .toast {
     position: fixed;
-    bottom: 24px;
+    bottom: 96px;
     left: 50%;
     transform: translateX(-50%);
     padding: 10px 24px;
@@ -1042,9 +1042,9 @@
       </button>
       {% endif %}
       {% if not md_content %}
-      <button onclick="startNewArticle()" class="btn-ghost text-sm flex items-center gap-1.5">
+      <button id="btn-edit" onclick="startNewArticle()" class="btn-ghost text-sm flex items-center gap-1.5">
         <i class="fa fa-pencil"></i>
-        <span class="hidden sm:inline">写文章</span>
+        <span class="hidden sm:inline">编辑模式</span>
       </button>
       {% endif %}
       <button onclick="toggleMusicPlayer()" id="header-music-btn" class="text-sm cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 hover:scale-105" style="background: rgba(233,30,99,0.08); color: #C2185B; border: 1.5px solid rgba(233,30,99,0.2);" title="音乐播放器">
@@ -1459,10 +1459,218 @@
 // 文件数据
 const files = [
   {% for f in files %}
-  { name: '{{ f.name }}', path: '{{ f.path|replace('\\', '/') }}', type: '{{ f.type }}' },
+  { name: '{{ f.name }}', path: '{{ f.path|replace('\\', '/') }}', type: '{{ f.type }}', mtime: {{ f.mtime }} },
   {% endfor %}
 ];
 let currentIdx = 0;
+// 刷新后定位到该文件的路径（由 renameFile/uploadFiles 设置）
+let targetRefreshPath = null;
+// 记录已旋转文件的时间戳（用于 cache-busting）
+let rotatedFiles = {};
+
+/* ========== 局部刷新 ========== */
+// 重新加载文件列表并渲染画廊（替代 location.reload）
+function refreshGallery() {
+  console.log('[refreshGallery] 开始刷新，章节:', CHAPTER_NAME, 'targetRefreshPath:', targetRefreshPath);
+  // 保存当前状态
+  var savedIdx = currentIdx;
+  var savedFilter = currentFilter;
+  var savedEditing = editing;
+  var savedTargetPath = targetRefreshPath;
+  
+  fetch('/api/file/list?chapter=' + encodeURIComponent(CHAPTER_NAME))
+    .then(function(res) { 
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json(); 
+    })
+    .then(function(data) {
+      console.log('[refreshGallery] API 返回:', JSON.stringify(data).substring(0, 200));
+      if (data.ok && data.files) {
+        // 关闭大图预览
+        var previewOverlay = document.getElementById('preview-overlay');
+        if (previewOverlay) previewOverlay.classList.remove('active');
+        // 更新 files 数组
+        files.length = 0;
+        data.files.forEach(function(f) {
+          files.push({ name: f.name, path: f.path, type: f.type, mtime: f.mtime });
+        });
+        console.log('[refreshGallery] 文件列表已更新，共', files.length, '个文件');
+        // 重置缓存
+        preloadedPaths = new Set();
+        renderedThumbMap = {};
+        filteredFiles = [];
+        // 恢复筛选状态
+        currentFilter = savedFilter;
+        var filterSelect = document.getElementById('media-filter');
+        if (filterSelect) filterSelect.value = savedFilter;
+        // 应用筛选（会重新计算 filteredFiles 和 currentPage）
+        applyMediaFilter(savedFilter);
+        // 优先按目标路径定位（重命名/上传后定位到新文件）
+        if (savedTargetPath) {
+          var normTarget = savedTargetPath.replace(/\\/g, '/');
+          var foundIdx = -1;
+          for (var i = 0; i < files.length; i++) {
+            if (files[i].path.replace(/\\/g, '/') === normTarget) {
+              foundIdx = i;
+              break;
+            }
+          }
+          if (foundIdx >= 0) {
+            currentIdx = foundIdx;
+            console.log('[refreshGallery] 按路径定位到索引:', foundIdx, files[foundIdx].name);
+            // 计算目标文件在 filteredFiles 中的位置，切换到对应页
+            var targetFilteredIdx = filteredFiles.indexOf(files[foundIdx]);
+            if (targetFilteredIdx >= 0) {
+              var targetPage = Math.floor(targetFilteredIdx / itemsPerPage) + 1;
+              if (targetPage !== currentPage) {
+                currentPage = targetPage;
+                renderPage();
+              }
+            }
+          } else {
+            console.log('[refreshGallery] 未找到目标路径:', normTarget, '回退到原索引');
+            // 目标文件不存在（可能被删除），回退到原索引
+            if (savedIdx < files.length) {
+              currentIdx = savedIdx;
+              if (!files[currentIdx]) {
+                currentIdx = Math.min(savedIdx, files.length - 1);
+                if (currentIdx < 0) currentIdx = 0;
+              }
+            } else if (files.length > 0) {
+              currentIdx = Math.min(savedIdx, files.length - 1);
+            } else {
+              currentIdx = 0;
+            }
+          }
+        } else {
+          // 没有目标路径，保留之前的查看位置
+          if (savedIdx < files.length) {
+            currentIdx = savedIdx;
+            if (!files[currentIdx]) {
+              currentIdx = Math.min(savedIdx, files.length - 1);
+              if (currentIdx < 0) currentIdx = 0;
+            }
+          } else if (files.length > 0) {
+            currentIdx = Math.min(savedIdx, files.length - 1);
+          } else {
+            currentIdx = 0;
+          }
+        }
+        // 恢复编辑模式状态
+        if (savedEditing && !editing) {
+          editing = true;
+          document.getElementById('article-preview').style.display = 'none';
+          document.getElementById('article-edit').style.display = 'block';
+          var btnEdit = document.getElementById('btn-edit');
+          if (btnEdit) btnEdit.innerHTML = '<i class="fa fa-save"></i> 保存';
+          document.querySelectorAll('.edit-only').forEach(function(el) {
+            el.style.display = '';
+          });
+        }
+        // 更新主显示和缩略图高亮
+        updateMainDisplay();
+        // 滚动缩略图列表到当前选中项
+        var activeThumb = document.querySelector('#thumb-list .thumb-item.active');
+        if (activeThumb) {
+          activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+        // 清除目标路径标记
+        targetRefreshPath = null;
+        console.log('[refreshGallery] 刷新完成');
+      } else {
+        console.error('[refreshGallery] API 返回异常:', data);
+        toast('刷新失败', true);
+      }
+    })
+    .catch(function(err) {
+      console.error('[refreshGallery] 错误:', err);
+      toast('刷新失败: ' + err.message, true);
+    });
+}
+
+// 刷新单个缩略图（用于旋转后立即生效）
+function refreshThumb(filePath) {
+  var normPath = filePath.replace(/\\/g, '/');
+  var ts = Date.now();
+  
+  // 记录已旋转文件的时间戳（用于 cache-busting）
+  rotatedFiles[normPath] = ts;
+  
+  // 刷新缩略图列表中的对应项
+  var thumbs = document.querySelectorAll('.thumb-item');
+  thumbs.forEach(function(thumb) {
+    var img = thumb.querySelector('img');
+    var path = thumb.getAttribute('data-thumb-path');
+    if (path && path.replace(/\\/g, '/') === normPath && img) {
+      var src = img.src.replace(/\?t=\d+$/, '');
+      img.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 't=' + ts;
+      // 从缓存中移除，下次渲染会重新加载
+      if (renderedThumbMap[path]) {
+        delete renderedThumbMap[path];
+      }
+    }
+  });
+  
+  // 刷新主显示区域的图片（通过更新 rotatedFiles 后重新调用 updateMainDisplay）
+  // 不直接修改 DOM，让 updateMainDisplay() 统一处理
+  var currentFile = files[currentIdx];
+  if (currentFile && currentFile.path.replace(/\\/g, '/') === normPath) {
+    updateMainDisplay();
+  }
+  
+  // 刷新灯箱主内容区（如果灯箱正在显示该图片）
+  var lbContent = document.getElementById('lb-content');
+  if (lbContent && document.getElementById('lightbox').classList.contains('active')) {
+    var lbImg = lbContent.querySelector('img');
+    if (lbImg && lbImg.src) {
+      var src = lbImg.src.replace(/\?t=\d+$/, '').replace(/\?_=\d+$/, '');
+      lbImg.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 't=' + ts;
+    }
+  }
+  
+  // 刷新灯箱中的缩略图（如果灯箱正在显示）
+  var lbThumbs = document.querySelectorAll('.lb-thumb');
+  lbThumbs.forEach(function(thumb) {
+    var idx = parseInt(thumb.getAttribute('data-lb-thumb-idx'));
+    if (!isNaN(idx) && files[idx] && files[idx].path.replace(/\\/g, '/') === normPath) {
+      var img = thumb.querySelector('img');
+      var vid = thumb.querySelector('video');
+      if (img) {
+        var src = img.src.replace(/\?t=\d+$/, '');
+        img.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 't=' + ts;
+      } else if (vid) {
+        var src2 = vid.src.replace(/\?t=\d+$/, '');
+        vid.src = src2 + (src2.indexOf('?') >= 0 ? '&' : '?') + 't=' + ts;
+        vid.load();
+      }
+    }
+  });
+}
+
+// 刷新预览大图（如果当前正在查看该图片）
+function refreshPreviewImage(filePath) {
+  var normPath = filePath.replace(/\\/g, '/');
+  var previewImg = document.getElementById('preview-img');
+  var previewTitle = document.getElementById('preview-title');
+  var ts = Date.now();
+  
+  if (previewImg && previewImg.src && previewImg.src.indexOf(encodeURI(normPath.split('/').pop())) !== -1) {
+    var src = previewImg.src.replace(/\?t=\d+$/, '');
+    previewImg.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 't=' + ts;
+  }
+  
+  // 更新预览标题
+  if (previewTitle) {
+    var basename = normPath.split('/').pop();
+    previewTitle.textContent = basename;
+  }
+}
+
+// 关闭弹窗
+function closeModal(modalId) {
+  var modal = document.getElementById(modalId);
+  if (modal) modal.classList.remove('active');
+}
 
 /* ========== iframe 通信 ========== */
 var isInIframe = window.parent !== window;
@@ -1994,11 +2202,11 @@ function renderPage() {
       // 未渲染过，创建新元素
       if (f.type === 'image') {
         html += `<div class="thumb-item${active ? ' active' : ''}" data-thumb-path="${f.path}" onclick="currentIdx=${origIdx};updateMainDisplay();">
-          <img src="/file/${encodeURIComponent(f.path)}" alt="${f.name}" loading="lazy">
+          <img src="/file/${encodeURIComponent(f.path)}?t=${f.mtime}" alt="${f.name}" loading="lazy">
         </div>`;
       } else {
         html += `<div class="thumb-item${active ? ' active' : ''}" data-thumb-path="${f.path}" onclick="currentIdx=${origIdx};updateMainDisplay();">
-          <video src="/file/${encodeURIComponent(f.path)}" preload="metadata"></video>
+          <video src="/file/${encodeURIComponent(f.path)}?t=${f.mtime}" preload="metadata"></video>
           <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);font-size:14px;color:white;pointer-events:none;"><i class="fa fa-play"></i></div>
         </div>`;
       }
@@ -2059,37 +2267,48 @@ function updateMainDisplay() {
   const actionsContainer = document.getElementById('main-display-actions');
   if (!f) { container.innerHTML = ''; return; }
 
-  // 更新操作按钮 - 只在编辑模式下显示删除、重命名和移动按钮
+  // 转义路径中的反斜杠，避免破坏 JavaScript 字符串
+  var safePath = f.path.replace(/\\/g, '/').replace(/'/g, "\\'");
+  var safeName = f.name.replace(/'/g, "\\'");
+  var isImage = f.type === 'image';
+
+  // 更新操作按钮 - 只在编辑模式下显示删除、重命名、移动、旋转和设为封面按钮
   if (editing) {
-    actionsContainer.innerHTML = `
-      <button class="main-action-btn delete-btn" onclick="confirmDeleteFile('${f.path}', '${f.name}')" title="删除">
-        <i class="fa fa-trash"></i>
-      </button>
-      <button class="main-action-btn rename-btn" onclick="showRenameFile('${f.path}', '${f.name}')" title="重命名">
-        <i class="fa fa-pencil"></i>
-      </button>
-      <button class="main-action-btn" style="background:rgba(33,150,243,0.9); color:white;" onclick="showMoveFileModal('${f.path}', '${f.name}')" title="移动到其他章节">
-        <i class="fa fa-arrows"></i>
-      </button>
-      <button onclick="openLightbox()" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.2);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.25);color:white;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
-        <i class="fa fa-expand"></i>
-      </button>
-    `;
+    actionsContainer.innerHTML =
+      '<button class="main-action-btn delete-btn" onclick="confirmDeleteFile(\'' + safePath + '\', \'' + safeName + '\')" title="删除">' +
+        '<i class="fa fa-trash"></i>' +
+      '</button>' +
+      '<button class="main-action-btn rename-btn" onclick="showRenameFile(\'' + safePath + '\', \'' + safeName + '\')" title="重命名">' +
+        '<i class="fa fa-pencil"></i>' +
+      '</button>' +
+      '<button class="main-action-btn" style="background:rgba(33,150,243,0.9); color:white;" onclick="showMoveFileModal(\'' + safePath + '\', \'' + safeName + '\')" title="移动到其他章节">' +
+        '<i class="fa fa-arrows"></i>' +
+      '</button>' +
+      '<button class="main-action-btn" style="background:rgba(139,69,19,0.9); color:white;' + (isImage ? '' : 'opacity:0.4;cursor:not-allowed;') + '" data-rotate-path="' + (isImage ? safePath : '') + '" onclick="var p=this.getAttribute(\'data-rotate-path\');if(p)rotateImage(p)" title="旋转90°">' +
+        '<i class="fa fa-rotate-right"></i>' +
+      '</button>' +
+      '<button class="main-action-btn" style="background:rgba(255,152,0,0.9); color:white;' + (isImage ? '' : 'opacity:0.4;cursor:not-allowed;') + '" ' + (isImage ? 'onclick="setChapterCover(\'' + safePath + '\')"' : '') + ' title="设为章节封面">' +
+        '<i class="fa fa-star"></i>' +
+      '</button>' +
+      '<button onclick="openLightbox()" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.2);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.25);color:white;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;transition:all 0.2s;" onmouseover="this.style.background=\'rgba(255,255,255,0.4)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.2)\'">' +
+        '<i class="fa fa-expand"></i>' +
+      '</button>';
   } else {
-    actionsContainer.innerHTML = `
-      <button onclick="openLightbox()" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.2);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.25);color:white;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
-        <i class="fa fa-expand"></i>
-      </button>
-    `;
+    actionsContainer.innerHTML =
+      '<button onclick="openLightbox()" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.2);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.25);color:white;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;transition:all 0.2s;" onmouseover="this.style.background=\'rgba(255,255,255,0.4)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.2)\'">' +
+        '<i class="fa fa-expand"></i>' +
+      '</button>';
   }
 
   if (f.type === 'image') {
+    // 使用 mtime 作为缓存破坏参数，文件修改后自动更新
+    var imgSrc = '/file/' + encodeURIComponent(f.path) + '?t=' + f.mtime;
     container.innerHTML = `
       <div class="main-display-content">
         <div class="main-display-header">
           <div class="file-name">${f.name}</div>
         </div>
-        <img src="/file/${encodeURIComponent(f.path)}" alt="${f.name}" class="main-display-img">
+        <img src="${imgSrc}" alt="${f.name}" class="main-display-img">
       </div>
     `;
   } else {
@@ -2225,12 +2444,20 @@ function openLightbox() {
   renderLightboxThumbs();
   document.getElementById('lightbox').classList.add('active');
   document.body.style.overflow = 'hidden';
+  // 通知 shell 隐藏音乐播放器
+  if (isInIframe) {
+    parent.postMessage({ type: 'fullscreen-entered' }, '*');
+  }
 }
 function closeLightbox() {
   document.getElementById('lightbox').classList.remove('active');
   document.body.style.overflow = '';
   const v = document.querySelector('#lb-content video');
   if (v) v.pause();
+  // 通知 shell 恢复音乐播放器
+  if (isInIframe) {
+    parent.postMessage({ type: 'fullscreen-exited' }, '*');
+  }
 }
 function navLightbox(dir) {
   if (navBusy) return;
@@ -2259,9 +2486,9 @@ function updateLightboxContent() {
   const f = files[currentIdx];
   const container = document.getElementById('lb-content');
   if (f.type === 'image') {
-    container.innerHTML = '<img src="/file/' + encodeURIComponent(f.path) + '" onclick="event.stopPropagation()">';
+    container.innerHTML = '<img src="/file/' + encodeURIComponent(f.path) + '?t=' + f.mtime + '" onclick="event.stopPropagation()">';
   } else {
-    container.innerHTML = '<video src="/file/' + encodeURIComponent(f.path) + '" controls autoplay onclick="event.stopPropagation()" style="max-width:90vw;max-height:78vh;border-radius:8px;"></video>';
+    container.innerHTML = '<video src="/file/' + encodeURIComponent(f.path) + '?t=' + f.mtime + '" controls autoplay onclick="event.stopPropagation()" style="max-width:90vw;max-height:78vh;border-radius:8px;"></video>';
   }
 }
 var lbThumbLoadWindow = 15;
@@ -2315,12 +2542,12 @@ function loadLbThumbSource(item) {
   if (f.type === 'image') {
     var img = item.querySelector('img');
     if (img && !img.src) {
-      img.src = '/file/' + encodeURIComponent(f.path);
+      img.src = '/file/' + encodeURIComponent(f.path) + '?t=' + f.mtime;
     }
   } else {
     var vid = item.querySelector('video');
     if (vid && !vid.src) {
-      vid.src = '/file/' + encodeURIComponent(f.path);
+      vid.src = '/file/' + encodeURIComponent(f.path) + '?t=' + f.mtime;
     }
   }
 }
@@ -2555,18 +2782,41 @@ async function renameFile() {
   const full_new_name = new_name + ext;
   const res = await fetch('/api/file/rename', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ old_path, new_name: full_new_name }) });
   const data = await res.json();
-  if (data.ok) toast('重命名成功'); else toast(data.error || '失败', true);
-  setTimeout(() => location.reload(), 500);
+  if (data.ok) {
+    toast('重命名成功');
+    closeModal('modal-rename-file');
+    // 构造相对路径（章节名/新文件名），统一用正斜杠
+    // old_path 已经是相对路径格式，只需替换文件名部分
+    var parts = old_path.split('/');
+    parts[parts.length - 1] = full_new_name;
+    targetRefreshPath = parts.join('/');
+    refreshGallery();
+  } else {
+    toast(data.error || '失败', true);
+  }
 }
 async function deleteFile() {
   const path = document.getElementById('df-path').value;
+  // 计算删除后应该显示的下一个文件（或上一个，如果是最后一个）
+  const deletedIdx = files.findIndex(function(f) { return f.path === path; });
+  if (deletedIdx >= 0) {
+    if (deletedIdx < files.length - 1) {
+      targetRefreshPath = files[deletedIdx + 1].path;
+    } else if (deletedIdx > 0) {
+      targetRefreshPath = files[deletedIdx - 1].path;
+    } else {
+      targetRefreshPath = null;
+    }
+  } else {
+    targetRefreshPath = null;
+  }
   const res = await fetch('/api/file/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ path }) });
   const data = await res.json();
   if (data.ok) {
     toast('已删除');
-    // 删除成功后，刷新页面并保持在编辑模式
-    localStorage.setItem('keepEditing', 'true');
-    setTimeout(() => location.reload(), 500);
+    closeModal('modal-delete-file');
+    // 局部刷新画廊，会跳转到 targetRefreshPath 指定的文件
+    refreshGallery();
   } else {
     toast(data.error || '失败', true);
   }
@@ -2578,8 +2828,87 @@ async function uploadFiles(fileList) {
   for (const f of fileList) fd.append('files', f);
   const res = await fetch('/api/file/upload', { method: 'POST', body: fd });
   const data = await res.json();
-  if (data.ok) toast('上传了 ' + data.saved.length + ' 个文件'); else toast(data.error || '失败', true);
-  setTimeout(() => location.reload(), 800);
+  if (data.ok) {
+    toast('上传了 ' + data.saved.length + ' 个文件');
+    // 上传后定位到第一个新文件（按文件名匹配）
+    if (data.saved && data.saved.length > 0) {
+      const chapter = '{{ chapter_name }}';
+      targetRefreshPath = (chapter + '/' + data.saved[0]).replace(/\\/g, '/');
+    } else {
+      targetRefreshPath = null;
+    }
+  } else {
+    toast(data.error || '失败', true);
+    targetRefreshPath = null;
+  }
+  refreshGallery();
+}
+
+// 旋转图片
+function rotateImage(fpath) {
+  if (!fpath) return;
+  fetch('/api/file/rotate', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ path: fpath, degrees: 90 })
+  }).then(function(res) {
+    return res.json();
+  }).then(function(data) {
+    if (data.ok) {
+      // 旋转成功，重新获取文件列表以获取最新的 mtime
+      fetch('/api/file/list?chapter=' + encodeURIComponent(CHAPTER_NAME))
+        .then(function(res) { return res.json(); })
+        .then(function(listData) {
+          if (listData.ok && listData.files) {
+            // 更新 files 数组中的 mtime
+            listData.files.forEach(function(f) {
+              var normFpath = f.path.replace(/\\/g, '/');
+              for (var i = 0; i < files.length; i++) {
+                if (files[i].path.replace(/\\/g, '/') === normFpath) {
+                  files[i].mtime = f.mtime;
+                  break;
+                }
+              }
+            });
+            // 现在用最新的 mtime 刷新所有显示位置
+            refreshThumb(fpath);
+            // 通知父页面图片已旋转，需要更新章节封面缩略图
+            if (isInIframe) {
+              parent.postMessage({ type: 'chapter-photo-rotated', chapter: CHAPTER_NAME }, '*');
+            }
+          }
+        });
+      toast('旋转成功');
+    } else {
+      toast(data.error || '旋转失败', true);
+    }
+  }).catch(function(e) {
+    toast('旋转失败', true);
+  });
+}
+
+// 设为章节封面
+function setChapterCover(fpath) {
+  if (!fpath) return;
+  fetch('/api/file/set-cover', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ chapter: CHAPTER_NAME, path: fpath, action: 'set' })
+  }).then(function(res) {
+    return res.json();
+  }).then(function(data) {
+    if (data.ok) {
+      toast('已设为章节封面');
+      // 通知首页刷新章节封面
+      if (isInIframe) {
+        parent.postMessage({ type: 'chapter-photo-rotated', chapter: CHAPTER_NAME }, '*');
+      }
+    } else {
+      toast(data.error || '设置封面失败', true);
+    }
+  }).catch(function(e) {
+    toast('设置封面失败', true);
+  });
 }
 
 // 文章编辑
@@ -2665,17 +2994,20 @@ document.getElementById('edit-area').addEventListener('keydown', function(e) {
   }
 });
 function toggleEdit() {
-  editing = !editing;
-  document.getElementById('article-preview').style.display = editing ? 'none' : 'block';
-  document.getElementById('article-edit').style.display = editing ? 'block' : 'none';
-  const text = editing ? '<i class="fa fa-save"></i> 保存' : '<i class="fa fa-pencil"></i> 编辑模式';
+  // 如果当前正在编辑中，点击"保存"按钮 → 先保存再退出
+  if (editing) {
+    saveArticle();
+    return;
+  }
+  editing = true;
+  document.getElementById('article-preview').style.display = 'none';
+  document.getElementById('article-edit').style.display = 'block';
   const btnEdit = document.getElementById('btn-edit');
-  if (btnEdit) btnEdit.innerHTML = text;
-  if (editing) loadEditAuthorSelect();
+  if (btnEdit) btnEdit.innerHTML = '<i class="fa fa-save"></i> 保存';
+  loadEditAuthorSelect();
   document.querySelectorAll('.edit-only').forEach(function(el) {
-    el.style.display = editing ? '' : 'none';
+    el.style.display = '';
   });
-  renderThumbnails();
   updateMainDisplay();
 }
 
@@ -2757,38 +3089,73 @@ function cancelEdit() {
   document.getElementById('edit-area').value = {{ md_content | tojson }}.replace(/&#39;/g, "'").replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
   toggleEdit();
 }
-function startNewArticle() {
-  document.getElementById('edit-area').value = '# {{ chapter_name }}\n\n在这里写下你的回忆...\n';
-  editing = false;
-  toggleEdit();
+async function startNewArticle() {
+  try {
+    const chapterEncoded = encodeURIComponent('{{ chapter_name }}');
+    const res = await fetch('/api/articles/create', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        chapter: '{{ chapter_name }}',
+        title: '{{ chapter_name }}',
+        author: ''
+      })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      currentArticleKey = data.key;
+      document.getElementById('edit-area').value = data.content;
+      // 添加到文章列表
+      allArticles.unshift({ key: data.key, title: '{{ chapter_name }}', author: '', file: data.filename, preview: '' });
+      renderArticleSelect();
+      // 切换到编辑模式
+      editing = false;
+      toggleEdit();
+    } else {
+      toast(data.error || '创建失败', true);
+    }
+  } catch (e) {
+    toast('创建失败', true);
+  }
 }
 async function saveArticle() {
-  const content = document.getElementById('edit-area').value;
-  const author = getSelectedAuthor('edit');
-  const res = await fetch('/api/article/save', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      chapter: '{{ chapter_name }}',
-      content,
-      article_key: currentArticleKey,
-      author
-    })
-  });
-  const data = await res.json();
-  if (data.ok) {
-    toast('保存成功');
-    // 先更新预览内容，再切换到预览模式
-    document.getElementById('article-preview').innerHTML = simple_markdown(content);
-    // 更新作者显示和文章列表中的作者信息
-    if (currentArticleKey) {
-      const article = allArticles.find(a => a.key === currentArticleKey);
-      if (article) { article.author = author; updateAuthorDisplay(author); }
+  try {
+    const content = document.getElementById('edit-area').value;
+    const author = getSelectedAuthor('edit');
+    const res = await fetch('/api/article/save', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        chapter: '{{ chapter_name }}',
+        content,
+        article_key: currentArticleKey,
+        author
+      })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      toast('保存成功');
+      document.getElementById('article-preview').innerHTML = simple_markdown(content);
+      if (currentArticleKey) {
+        var article = allArticles.find(function(a) { return a.key === currentArticleKey; });
+        if (article) { article.author = author; updateAuthorDisplay(author); }
+      }
+    } else {
+      toast(data.error || '保存失败', true);
     }
-    if (editing) toggleEdit();
-  } else {
-    toast(data.error || '失败', true);
+  } catch(e) {
+    toast('保存失败', true);
   }
+  // 直接退出编辑模式（不用 toggleEdit 避免递归）
+  editing = false;
+  document.getElementById('article-preview').style.display = 'block';
+  document.getElementById('article-edit').style.display = 'none';
+  var btnEdit = document.getElementById('btn-edit');
+  if (btnEdit) btnEdit.innerHTML = '<i class="fa fa-pencil"></i> 编辑模式';
+  document.querySelectorAll('.edit-only').forEach(function(el) {
+    el.style.display = 'none';
+  });
+  updateMainDisplay();
 }
 
 // ============ 多文章管理 ============
@@ -3046,13 +3413,13 @@ async function loadChapterListForMove() {
   const container = document.getElementById('move-chapter-list');
   container.innerHTML = '<div style="padding:16px; text-align:center; color:#bbb;"><i class="fa fa-spinner fa-spin" style="font-size:18px;"></i></div>';
   try {
-    const res = await fetch('/api/chapters');
+    const res = await fetch('/api/chapter');
     const data = await res.json();
-    if (!data.ok) {
+    if (!data.ok || !data.chapters) {
       container.innerHTML = '<div style="padding:16px; text-align:center; color:#dc2626; font-size:13px;">加载失败</div>';
       return;
     }
-    allMoveChapters = data.chapters.filter(ch => ch.name !== CHAPTER_NAME);
+    allMoveChapters = data.chapters.map(ch => ({ name: ch.name, year: ch.year || '' })).filter(ch => ch.name !== CHAPTER_NAME);
     const yearSet = new Set();
     allMoveChapters.forEach(ch => { if (ch.year) yearSet.add(ch.year); });
     const years = Array.from(yearSet).sort((a, b) => b.localeCompare(a));
@@ -3108,6 +3475,22 @@ async function confirmMoveToChapter() {
   
   if (itemType === 'file') {
     const path = document.getElementById('move-item-path').value;
+    // 计算移动后应该显示的下一个文件（或上一个，如果是最后一个）
+    const movedIdx = files.findIndex(function(f) { return f.path === path; });
+    if (movedIdx >= 0) {
+      if (movedIdx < files.length - 1) {
+        // 不是最后一个，显示下一个
+        targetRefreshPath = files[movedIdx + 1].path;
+      } else if (movedIdx > 0) {
+        // 是最后一个但不是第一个，显示上一个
+        targetRefreshPath = files[movedIdx - 1].path;
+      } else {
+        // 只有一个文件，移动后文件列表为空，不设置 targetRefreshPath
+        targetRefreshPath = null;
+      }
+    } else {
+      targetRefreshPath = null;
+    }
     const res = await fetch('/api/file/move', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -3117,8 +3500,8 @@ async function confirmMoveToChapter() {
     if (data.ok) {
       document.getElementById('modal-move-to-chapter').classList.remove('active');
       toast(`已移动到「${selectedTargetChapter}」`);
-      localStorage.setItem('keepEditing', 'true');
-      setTimeout(() => location.reload(), 800);
+      // 局部刷新画廊，会跳转到 targetRefreshPath 指定的文件
+      refreshGallery();
     } else {
       toast(data.error || '移动失败', true);
     }

@@ -47,17 +47,6 @@ def load_music_config():
     """加载音乐配置（章节-音乐关联 + 用户设置）"""
     chapter_music = load_chapter_music_csv()
     
-    if os.path.exists(MUSIC_CONFIG_FILE):
-        try:
-            with open(MUSIC_CONFIG_FILE, 'r', encoding='utf-8') as f:
-                old_config = json.load(f)
-                old_chapter_music = old_config.get('chapter_music', {})
-                for chapter, music in old_chapter_music.items():
-                    if chapter not in chapter_music:
-                        chapter_music[chapter] = music
-        except Exception:
-            pass
-    
     return {'chapter_music': chapter_music, 'settings': {'auto_switch': True}}
 
 

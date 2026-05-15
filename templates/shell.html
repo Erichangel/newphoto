@@ -157,6 +157,10 @@
 <body>
   <!-- 用户选择界面（第一次打开时显示） -->
   <div id="user-select-screen" style="position:fixed; top:0; left:0; right:0; bottom:0; z-index:9999; background:linear-gradient(135deg, #FFE4EC 0%, #FFB6C1 30%, #E91E63 100%); display:flex; align-items:center; justify-content:center; flex-direction:column;">
+    <!-- 设置按钮（右上角） -->
+    <a href="/admin" target="_blank" style="position:absolute; top:20px; right:20px; padding:10px 18px; border-radius:12px; background:rgba(255,255,255,0.25); backdrop-filter:blur(10px); color:#C2185B; text-decoration:none; font-size:15px; font-weight:600; display:flex; align-items:center; gap:8px; transition:all 0.2s; box-shadow:0 2px 8px rgba(0,0,0,0.1);" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.25)'">
+      <i class="fa fa-cog"></i>设置
+    </a>
     <div style="text-align:center; margin-bottom:32px;">
       <i class="fa fa-heart" style="font-size:36px; color:#E91E63; margin-bottom:12px; display:block;"></i>
       <h2 style="font-size:28px; color:#C2185B; font-weight:700; margin-bottom:8px;">时光印记</h2>
@@ -277,6 +281,14 @@ var autoSwitch = true;
 var autoPlay = true;
 var currentChapter = '';
 var currentUserId = null;
+
+// 尝试从 localStorage 恢复 currentUserId（页面刷新后保持登录状态）
+try {
+  var savedUserId = localStorage.getItem('timeImprint_currentUserId');
+  if (savedUserId) {
+    currentUserId = savedUserId;
+  }
+} catch(e) {}
 
 var bgmAudio = document.getElementById('bgm-audio');
 var contentFrame = document.getElementById('content-frame');
@@ -577,7 +589,7 @@ async function showMusicSettings() {
 async function loadChaptersForMusicSelect() {
   var chapterSelect = document.getElementById('chapter-select-for-music');
   try {
-    var res = await fetch('/api/chapters');
+    var res = await fetch('/api/chapter');
     var data = await res.json();
     if (data.ok && data.chapters) {
       // 保留"首页"和"用户选择页"选项
@@ -587,7 +599,8 @@ async function loadChaptersForMusicSelect() {
       }
       // 添加章节列表
       var chapterOptions = data.chapters.map(function(ch) {
-        return '<option value="' + ch.name + '">' + ch.year + ' - ' + ch.name + '</option>';
+        var yearLabel = ch.year ? (ch.year + ' - ') : '';
+        return '<option value="' + ch.name + '">' + yearLabel + ch.name + '</option>';
       }).join('');
       chapterSelect.innerHTML = existingOptions + chapterOptions;
       // 默认选中首页
@@ -654,9 +667,9 @@ async function loadUserMusicSettings() {
       document.getElementById('music-auto-play').checked = autoPlay;
       // 显示音乐播放器
       showMusicPlayer();
-      // 如果自动播放，且当前没有播放音乐，则开始播放
-      if (autoPlay && !isMusicPlaying && !musicPlayLock && allMusicList.length > 0) {
-        playRandomMusic(true);
+      // 用户已登录，检查首页的音乐设置（而非用户选择页）
+      if (autoSwitch && allMusicList.length > 0) {
+        handleChapterChange('home');
       }
     }
   } catch (e) {
@@ -755,8 +768,12 @@ window.addEventListener('message', function(e) {
       break;
     case 'home-loaded':
       currentChapter = '';
-      // 首页也按照音乐设置处理（随机播放或不播放）
-      handleChapterChange('');
+      // 如果已有登录用户，按照首页音乐设置处理；否则按照用户选择页音乐设置处理
+      if (currentUserId) {
+        handleChapterChange('home');
+      } else {
+        handleChapterChange('login');
+      }
       // 如果已有登录用户，重新发送登录消息
       if (currentUserId) {
         var frame = document.getElementById('content-frame');
@@ -801,6 +818,17 @@ window.addEventListener('message', function(e) {
     case 'show-user-select':
       showUserSelectScreen();
       break;
+    case 'chapter-photo-rotated':
+      // 章节中的图片被旋转，需要刷新首页该章节的封面缩略图
+      if (msg.chapter) {
+        var chapterName = msg.chapter;
+        // 发送消息给iframe中的首页，让其刷新对应的章节封面缩略图
+        var frame = document.getElementById('content-frame');
+        if (frame && frame.contentWindow) {
+          frame.contentWindow.postMessage({ type: 'refresh-chapter-thumb', chapter: chapterName }, '*');
+        }
+      }
+      break;
     case 'music-cmd':
       switch(msg.cmd) {
         case 'play-specific': playSpecificMusic(msg.name, msg.shouldPlay); break;
@@ -811,6 +839,34 @@ window.addEventListener('message', function(e) {
         case 'volume': changeMusicVolume(msg.value); break;
       }
       break;
+    case 'fullscreen-entered':
+      // 全屏模式，隐藏音乐播放器
+      var mp = document.getElementById('music-player');
+      if (mp) mp.style.display = 'none';
+      break;
+    case 'fullscreen-exited':
+      // 退出全屏模式，恢复音乐播放器
+      var mp = document.getElementById('music-player');
+      if (mp) mp.style.display = 'flex';
+      break;
+  }
+});
+
+// 监听管理页面通过 localStorage 发送的封面刷新通知
+window.addEventListener('storage', function(e) {
+  if (e.key === '_time_imprint_refresh_cover') {
+    try {
+      var data = JSON.parse(e.newValue);
+      if (data && data.chapter) {
+        // 先清除 localStorage 中的旧数据
+        localStorage.removeItem('_time_imprint_refresh_cover');
+        // 转发给 iframe 中的首页刷新封面
+        var frame = document.getElementById('content-frame');
+        if (frame && frame.contentWindow) {
+          frame.contentWindow.postMessage({ type: 'refresh-chapter-thumb', chapter: data.chapter }, '*');
+        }
+      }
+    } catch(err) {}
   }
 });
 
@@ -819,8 +875,9 @@ function handleChapterChange(chapter) {
   // auto_switch 关闭：不做任何操作，继续播放原有音乐
   if (!autoSwitch || !allMusicList.length) return;
   
-  // 首页和用户选择页使用空字符串作为 key
+  // 首页使用 'home' 作为key，用户选择页使用 'login' 作为key，其他章节用原名
   var chapterKey = chapter || '';
+  if (chapterKey === '' || chapterKey === 'home') chapterKey = 'home';
   
   fetch('/api/chapter/music?chapter=' + encodeURIComponent(chapterKey))
     .then(function(r) { return r.json(); })
@@ -887,6 +944,8 @@ async function selectUserInShell(userId, userName) {
       userHasSelected = true;
       // 保存当前用户 ID
       currentUserId = userId;
+      // 持久化到 localStorage（页面刷新后保持登录状态）
+      try { localStorage.setItem('timeImprint_currentUserId', userId); } catch(e) {}
       // 显示音乐播放器
       showMusicPlayer();
       // 加载用户音乐设置
@@ -1002,7 +1061,12 @@ async function init() {
   // 加载用户列表
   loadShellUserList();
 
-  if (autoPlay) { playRandomMusic(true); }
+  // 初始化时使用用户选择页的音乐设置（因为页面初始显示的是用户选择页，不是首页）
+  if (autoSwitch && allMusicList.length > 0) {
+    handleChapterChange('login');
+  } else if (autoPlay) {
+    playRandomMusic(true);
+  }
 }
 
 init();

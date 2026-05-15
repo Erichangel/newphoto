@@ -105,6 +105,7 @@ def list_users():
     """获取所有用户列表"""
     users = load_users()
     return [
-        {'id': uid, 'name': uinfo['name'], 'created_at': uinfo.get('created_at', '')}
+        {'id': uid, 'name': uinfo['name'], 'created_at': uinfo.get('created_at', ''),
+         'last_chapter': uinfo.get('last_chapter', '')}
         for uid, uinfo in users.items()
     ]

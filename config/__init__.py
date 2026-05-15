@@ -41,6 +41,8 @@ USER_DATA_FILE = os.path.join(BASE_DIR, 'users.json')
 MUSIC_CONFIG_FILE = os.path.join(BASE_DIR, 'music_config.json')
 CHAPTER_MUSIC_CSV = os.path.join(BASE_DIR, 'chapter_music.csv')
 CONFIG_FILE = os.path.join(BASE_DIR, 'config.txt')
+CHAPTER_COVERS_FILE = os.path.join(BASE_DIR, 'chapter_covers.json')
+CHAPTER_FILE_ORDER_FILE = os.path.join(BASE_DIR, 'chapter_file_orders.json')
 
 # 确保目录存在
 os.makedirs(THUMB_DIR, exist_ok=True)
@@ -60,10 +62,14 @@ class AppConfig:
         if os.path.exists(CONFIG_FILE):
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
                 lines = f.read().strip().splitlines()
-                if lines and os.path.isdir(lines[0].strip()):
-                    self.root_dir = lines[0].strip()
-                if len(lines) > 1 and os.path.isdir(lines[1].strip()):
-                    self.music_dir = lines[1].strip()
+                if lines:
+                    path = lines[0].strip().replace('\\\\', '\\')
+                    if os.path.isdir(path):
+                        self.root_dir = path
+                if len(lines) > 1:
+                    path = lines[1].strip().replace('\\\\', '\\')
+                    if os.path.isdir(path):
+                        self.music_dir = path
     
     def save_to_file(self):
         """保存配置到 config.txt"""

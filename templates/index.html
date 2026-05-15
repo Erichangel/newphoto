@@ -601,7 +601,7 @@
     /* ========== Toast ========== */
     #toast {
       position: fixed;
-      bottom: 32px;
+      bottom: 96px;
       left: 50%;
       transform: translateX(-50%);
       padding: 10px 24px;
@@ -927,10 +927,10 @@
         </div>
       </div>
 
-      <button onclick="showModal('settings')" class="btn-ghost" title="设置">
+      <a href="/admin" class="btn-ghost" title="后台管理" style="text-decoration:none; color:inherit; display:inline-flex; align-items:center; gap:6px;" target="_blank">
         <i class="fa fa-cog"></i>
         <span class="hidden sm:inline">设置</span>
-      </button>
+      </a>
       <button onclick="toggleMusicPlayer()" id="header-music-btn" title="音乐播放器" style="cursor:pointer; display:flex; align-items:center; gap:4px; padding:6px 14px; border-radius:10px; border:1.5px solid rgba(233,30,99,0.2); background:rgba(233,30,99,0.08); color:#C2185B; font-size:13px; transition:all 0.2s;">
         <i class="fa fa-music"></i>
         <span class="hidden sm:inline">音乐</span>
@@ -969,7 +969,7 @@
 
       <div class="timeline-thumb">
         {% if ch.cover %}
-          <img src="{{ ch.cover }}" alt="{{ ch.name }}">
+          <img src="{{ ch.cover }}{% if ch.cover_mtime %}?t={{ ch.cover_mtime }}{% endif %}" alt="{{ ch.name }}">
         {% else %}
           <div class="no-cover">&#x1F4F7;</div>
         {% endif %}
@@ -1153,7 +1153,7 @@
     }
     if (isInIframe) shellMsg({ type: 'home-loaded' });
 
-    /* ========== 背景音乐系统 ========== */
+    /* ========== 背景音乐系统（iframe 模式下仅通过 postMessage 控制 shell，不自行播放） ========== */
     var allMusicList = [];
     var currentMusicName = '';
     var currentMusicIndex = -1;
@@ -1165,6 +1165,7 @@
     var bgmAudio = null;
 
     if (!isInIframe && !isIframeMode) {
+      // 独立模式：使用自己的 audio 元素
       bgmAudio = document.getElementById('bgm-audio');
       bgmAudio.addEventListener('ended', function() {
         musicErrorCount = 0;
@@ -1197,6 +1198,13 @@
           if (allMusicList.length > 0) playNextMusic();
         }, 500);
       });
+    } else {
+      // iframe 模式：停止自己的播放器，只通过 postMessage 控制 shell
+      if (bgmAudio) {
+        bgmAudio.pause();
+        bgmAudio.removeAttribute('src');
+        bgmAudio.load();
+      }
     }
 
     // 加载音乐列表
@@ -1423,7 +1431,7 @@
     async function loadChaptersForMusicSelectInIndex() {
       var chapterSelect = document.getElementById('chapter-select-for-music');
       try {
-        const res = await fetch('/api/chapters');
+        const res = await fetch('/api/chapter');
         const data = await res.json();
         if (data.ok && data.chapters) {
           // 保留"首页"和"用户选择页"选项
@@ -1433,7 +1441,8 @@
           }
           // 添加章节列表
           var chapterOptions = data.chapters.map(function(ch) {
-            return '<option value="' + ch.name + '">' + ch.year + ' - ' + ch.name + '</option>';
+            var yearLabel = ch.year ? (ch.year + ' - ') : '';
+            return '<option value="' + ch.name + '">' + yearLabel + ch.name + '</option>';
           }).join('');
           chapterSelect.innerHTML = existingOptions + chapterOptions;
           // 默认选中首页
@@ -2088,7 +2097,8 @@
           var html = '';
           for (var i = 0; i < data.folders.length; i++) {
             var f = data.folders[i];
-            var safePath = f.full_path.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            // 路径中的反斜杠需要三重转义：JSON中的\\ -> JS字符串中的\\ -> onclick属性中的\\\\
+            var safePath = f.full_path.replace(/\\/g, '\\\\\\\\').replace(/'/g, "\\'");
             html += '<div style="display:flex;align-items:center;padding:10px 14px;cursor:pointer;border-radius:8px;margin-bottom:2px;transition:background 0.15s;" onmouseover="this.style.background=\'#fef0f5\'" onmouseout="this.style.background=\'\'" onclick="pickFolder(\'' + safePath + '\')">' +
               '<i class="fa fa-folder" style="color:#FFB74D;margin-right:10px;font-size:16px;width:20px;text-align:center;"></i>' +
               '<span style="flex:1;font-size:14px;color:#333;">' + f.name + '</span>' +
@@ -2111,23 +2121,44 @@
       if (overlay) overlay.remove();
     }
 
-    // 监听 shell 的用户登录消息
+    // 监听 shell 的用户登录消息和刷新章节缩略图消息
     window.addEventListener('message', function(e) {
       var msg = e.data;
-      if (!msg || msg.type !== 'user-logged-in') return;
-      // 用户已登录，加载用户信息
-      currentUserId = msg.user_id;
-      fetch('/api/user/current').then(function(res) { return res.json(); }).then(function(data) {
-        if (data.ok && data.user) {
-          document.getElementById('current-user-name').textContent = data.user.name;
-          loadUserLastChapter();
-        } else {
-          // 新用户或无记录，滚动到顶部
+      if (!msg) return;
+      
+      if (msg.type === 'user-logged-in') {
+        // 用户已登录，加载用户信息
+        currentUserId = msg.user_id;
+        fetch('/api/user/current').then(function(res) { return res.json(); }).then(function(data) {
+          if (data.ok && data.user) {
+            document.getElementById('current-user-name').textContent = data.user.name;
+            loadUserLastChapter();
+          } else {
+            // 新用户或无记录，滚动到顶部
+            window.scrollTo(0, 0);
+          }
+        }).catch(function(){
           window.scrollTo(0, 0);
+        });
+      } else if (msg.type === 'refresh-chapter-thumb') {
+        // 刷新指定章节的封面缩略图
+        if (msg.chapter) {
+          var chapterName = msg.chapter;
+          var ts = Date.now();
+          var nodes = document.querySelectorAll('.timeline-node');
+          nodes.forEach(function(node) {
+            var onclick = node.getAttribute('onclick') || '';
+            if (onclick.indexOf(chapterName) !== -1) {
+              var thumb = node.querySelector('.timeline-thumb img');
+              if (thumb) {
+                var oldSrc = thumb.src;
+                var newSrc = oldSrc.split('?')[0] + '?t=' + ts;
+                thumb.src = newSrc;
+              }
+            }
+          });
         }
-      }).catch(function(){
-        window.scrollTo(0, 0);
-      });
+      }
     });
 
     /* ========== 滚动淡入动画 (IntersectionObserver) ========== */
