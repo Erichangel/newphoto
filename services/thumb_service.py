@@ -6,14 +6,16 @@ import os
 import hashlib
 import json
 from PIL import Image
-from config import THUMB_DIR, SUPPORTED_IMAGE, CHAPTER_COVERS_FILE
+from config import THUMB_DIR, SUPPORTED_IMAGE, get_chapter_covers_file
+from config import config as app_config
 
 
 def _load_covers():
     """加载章节封面配置"""
-    if os.path.exists(CHAPTER_COVERS_FILE):
+    covers_file = get_chapter_covers_file(app_config.root_dir)
+    if os.path.exists(covers_file):
         try:
-            with open(CHAPTER_COVERS_FILE, 'r', encoding='utf-8') as f:
+            with open(covers_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception:
             pass
@@ -22,7 +24,8 @@ def _load_covers():
 
 def _save_covers(covers):
     """保存章节封面配置"""
-    with open(CHAPTER_COVERS_FILE, 'w', encoding='utf-8') as f:
+    covers_file = get_chapter_covers_file(app_config.root_dir)
+    with open(covers_file, 'w', encoding='utf-8') as f:
         json.dump(covers, f, ensure_ascii=False)
 
 

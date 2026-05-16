@@ -8,17 +8,30 @@ import csv
 from urllib.parse import unquote
 from flask import make_response
 from config import (
-    SUPPORTED_AUDIO, MUSIC_CONFIG_FILE, CHAPTER_MUSIC_CSV,
+    SUPPORTED_AUDIO,
+    get_chapter_music_file,
+    get_music_config_file,
     config as app_config,
 )
+
+
+def _get_chapter_music_path():
+    """获取当前根目录的章节音乐CSV路径"""
+    return get_chapter_music_file(app_config.root_dir)
+
+
+def _get_music_config_path():
+    """获取当前根目录的音乐播放器配置路径"""
+    return get_music_config_file(app_config.root_dir)
 
 
 def load_chapter_music_csv():
     """从 CSV 文件加载章节音乐映射"""
     chapter_music = {}
-    if os.path.exists(CHAPTER_MUSIC_CSV):
+    csv_path = _get_chapter_music_path()
+    if os.path.exists(csv_path):
         try:
-            with open(CHAPTER_MUSIC_CSV, 'r', encoding='utf-8-sig') as f:
+            with open(csv_path, 'r', encoding='utf-8-sig') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     chapter = row.get('chapter', '').strip()
@@ -33,7 +46,8 @@ def load_chapter_music_csv():
 def save_chapter_music_csv(chapter_music):
     """保存章节音乐映射到 CSV 文件"""
     try:
-        with open(CHAPTER_MUSIC_CSV, 'w', encoding='utf-8', newline='') as f:
+        csv_path = _get_chapter_music_path()
+        with open(csv_path, 'w', encoding='utf-8', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=['chapter', 'music'])
             writer.writeheader()
             for chapter, music in chapter_music.items():

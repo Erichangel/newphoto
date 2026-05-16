@@ -616,16 +616,43 @@
     left: 50%;
     transform: translateX(-50%);
     display: flex;
+    align-items: center;
     gap: 6px;
     padding: 8px 16px;
     background: rgba(30, 20, 25, 0.8);
     backdrop-filter: blur(12px);
     border-radius: 24px;
     max-width: 80vw;
-    overflow-x: auto;
-    scrollbar-width: none;
   }
-  .lb-thumbs::-webkit-scrollbar { display: none; }
+  .lb-thumbs-page-info {
+    color: rgba(255,255,255,0.6);
+    font-size: 11px;
+    white-space: nowrap;
+    user-select: none;
+    min-width: 40px;
+    text-align: center;
+  }
+  .lb-thumb-nav {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.7);
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .lb-thumb-nav:hover { background: rgba(255,255,255,0.2); color: white; }
+  .lb-thumb-row {
+    display: flex;
+    gap: 6px;
+    overflow: hidden;
+  }
   .lb-thumb {
     width: 56px;
     height: 42px;
@@ -1245,6 +1272,18 @@
   <div class="lb-thumbs" id="lb-thumbs" onclick="event.stopPropagation()"></div>
 </div>
 
+<!-- 章节跳转确认弹窗（z-index 高于灯箱） -->
+<div id="modal-chapter-jump" class="modal-overlay" style="z-index: 10001;" onclick="if(event.target===this)closeModal('modal-chapter-jump')">
+  <div class="modal-box" style="text-align: center;">
+    <h3 class="serif" style="font-size: 18px; font-weight: 700; color: #C2185B; margin-bottom: 12px;">下一章节</h3>
+    <p id="chapter-jump-text" style="font-size: 14px; color: #666; margin-bottom: 20px;"></p>
+    <div style="display: flex; gap: 10px; justify-content: center;">
+      <button id="btn-jump-cancel" onclick="closeModal('modal-chapter-jump')" style="padding: 10px 28px; border-radius: 20px; border: 1.5px solid rgba(233,30,99,0.3); background: white; color: #C2185B; font-size: 13px; cursor: pointer; font-weight: 600;">取消</button>
+      <button id="btn-jump-confirm" onclick="" style="padding: 10px 28px; border-radius: 20px; border: none; background: #E91E63; color: white; font-size: 13px; cursor: pointer; font-weight: 600;">确定</button>
+    </div>
+  </div>
+</div>
+
 <!-- 视频全屏播放器 -->
 <div id="video-player" class="video-player">
   <button onclick="closeVideoPlayer()" style="position:absolute;top:16px;right:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
@@ -1442,18 +1481,6 @@
   </div>
 </div>
 {% endif %}
-
-<!-- 章节跳转确认弹窗 -->
-<div id="modal-chapter-jump" class="modal-overlay" onclick="if(event.target===this){this.classList.remove('active');navBusy=false;}">
-  <div class="modal-box" style="max-width:380px;text-align:center;">
-    <div style="font-size:36px;margin-bottom:12px;">📖</div>
-    <p id="chapter-jump-msg" style="font-size:15px;color:#333;margin-bottom:20px;line-height:1.5;"></p>
-    <div style="display:flex;justify-content:center;gap:12px;">
-      <button onclick="document.getElementById('modal-chapter-jump').classList.remove('active');navBusy=false;" class="btn-outline" style="padding:8px 24px;font-size:14px;">取消</button>
-      <button id="chapter-jump-confirm-btn" class="btn-pink" style="padding:8px 24px;font-size:14px;">确认前往</button>
-    </div>
-  </div>
-</div>
 
 <script>
 // 文件数据
@@ -2117,7 +2144,7 @@ async function initMusicForChapter() {
 // 初始化画廊
 var currentFilter = 'all';
 var currentPage = 1;
-var itemsPerPage = 10;
+var itemsPerPage = 8;
 var filteredFiles = [];
 var preloadedPaths = new Set();
 var renderedThumbMap = {}; // path -> DOM element 缓存已渲染的缩略图
@@ -2352,11 +2379,11 @@ function showChapterJumpConfirm(message, url) {
   if (navBusy) return;
   navBusy = true;
   pendingJumpUrl = url;
-  document.getElementById('chapter-jump-msg').textContent = message;
+  document.getElementById('chapter-jump-text').textContent = message;
   var modal = document.getElementById('modal-chapter-jump');
-  var btn = document.getElementById('chapter-jump-confirm-btn');
+  var btn = document.getElementById('btn-jump-confirm');
   btn.onclick = function() {
-    modal.classList.remove('active');
+    closeModal('modal-chapter-jump');
     navBusy = false;
     pendingJumpUrl = null;
     shellNav(url);
@@ -2397,6 +2424,7 @@ function navFile(dir) {
     var newPage = Math.floor(nextFilteredIdx / itemsPerPage) + 1;
     if (newPage !== currentPage) {
       currentPage = newPage;
+      renderPage();
     }
     updateMainDisplay();
     return;
@@ -2432,6 +2460,7 @@ function navFile(dir) {
     var page = Math.floor(filteredFiles.indexOf(files[currentIdx]) / itemsPerPage) + 1;
     if (page !== currentPage) {
       currentPage = page;
+      renderPage();
     }
   }
   updateMainDisplay();
@@ -2440,6 +2469,7 @@ function navFile(dir) {
 // 灯箱
 function openLightbox() {
   if (!files.length) return;
+  lbThumbPage = Math.floor(currentIdx / LB_THUMBS_PER_PAGE);
   updateLightboxContent();
   renderLightboxThumbs();
   document.getElementById('lightbox').classList.add('active');
@@ -2477,6 +2507,11 @@ function navLightbox(dir) {
     } else { toast('已经是第一张了', true); return; }
   }
   currentIdx = nextIdx;
+  // Auto-switch thumbnail page when navigating past current page boundaries
+  var newThumbPage = Math.floor(currentIdx / LB_THUMBS_PER_PAGE);
+  if (newThumbPage !== lbThumbPage) {
+    lbThumbPage = newThumbPage;
+  }
   updateLightboxContent();
   renderLightboxThumbs();
   updateLbThumbnailSrcs();
@@ -2492,24 +2527,69 @@ function updateLightboxContent() {
   }
 }
 var lbThumbLoadWindow = 15;
+var lbThumbPage = 0;
+var LB_THUMBS_PER_PAGE = 8;
+
+function getLbThumbPage() {
+  return lbThumbPage;
+}
+
+function getLbThumbTotalPages() {
+  return Math.ceil(files.length / LB_THUMBS_PER_PAGE) || 1;
+}
 
 function renderLightboxThumbs() {
   const container = document.getElementById('lb-thumbs');
-  const html = files.map((f, i) => {
-    const active = i === currentIdx ? ' active' : '';
+  const totalPages = getLbThumbTotalPages();
+  const startIdx = lbThumbPage * LB_THUMBS_PER_PAGE;
+  const endIdx = Math.min(startIdx + LB_THUMBS_PER_PAGE, files.length);
+  const pageItems = files.slice(startIdx, endIdx);
+  
+  // Build HTML with pagination controls
+  let html = '';
+  html += `<button class="lb-thumb-nav" onclick="event.stopPropagation(); lbThumbPrev()" id="lb-prev-thumb" style="${lbThumbPage === 0 ? 'opacity:0.3;pointer-events:none;' : ''}"><i class="fa fa-chevron-left"></i></button>`;
+  html += '<div class="lb-thumb-row">';
+  pageItems.forEach((f, localIdx) => {
+    const globalIdx = startIdx + localIdx;
+    const active = globalIdx === currentIdx ? ' active' : '';
     if (f.type === 'image') {
-      return `<div class="lb-thumb${active}" data-lb-thumb-idx="${i}" onclick="currentIdx=${i};updateLightboxContent();renderLightboxThumbs();updateMainDisplay();">
+      html += `<div class="lb-thumb${active}" data-lb-thumb-idx="${globalIdx}" onclick="jumpToThumb(${globalIdx});">
         <img loading="lazy">
       </div>`;
     } else {
-      return `<div class="lb-thumb${active}" data-lb-thumb-idx="${i}" onclick="currentIdx=${i};updateLightboxContent();renderLightboxThumbs();updateMainDisplay();">
+      html += `<div class="lb-thumb${active}" data-lb-thumb-idx="${globalIdx}" onclick="jumpToThumb(${globalIdx});">
         <video preload="metadata"></video>
       </div>`;
     }
-  }).join('');
+  });
+  html += '</div>';
+  html += `<button class="lb-thumb-nav" onclick="event.stopPropagation(); lbThumbNext()" id="lb-next-thumb" style="${lbThumbPage >= totalPages - 1 ? 'opacity:0.3;pointer-events:none;' : ''}"><i class="fa fa-chevron-right"></i></button>`;
+  html += `<span class="lb-thumbs-page-info">${lbThumbPage + 1}/${totalPages}</span>`;
+  
   container.innerHTML = html;
 
   setupLbThumbObserver(container);
+}
+
+function lbThumbPrev() {
+  if (lbThumbPage > 0) {
+    lbThumbPage--;
+    renderLightboxThumbs();
+  }
+}
+
+function lbThumbNext() {
+  if (lbThumbPage < getLbThumbTotalPages() - 1) {
+    lbThumbPage++;
+    renderLightboxThumbs();
+  }
+}
+
+function jumpToThumb(idx) {
+  currentIdx = idx;
+  updateLightboxContent();
+  renderLightboxThumbs();
+  updateMainDisplay();
 }
 
 function setupLbThumbObserver(container) {
@@ -2685,6 +2765,22 @@ setInterval(() => {
 
 // 键盘导航
 document.addEventListener('keydown', e => {
+  // 章节跳转弹窗（最高优先级，在灯箱之上）
+  var jumpModal = document.getElementById('modal-chapter-jump');
+  if (jumpModal && jumpModal.classList.contains('active')) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      document.getElementById('btn-jump-confirm').click();
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeModal('modal-chapter-jump');
+    }
+    return;
+  }
+  // 其他弹窗
+  if (document.querySelector('.modal-overlay.active')) return;
+  
   // 灯箱
   if (document.getElementById('lightbox').classList.contains('active')) {
     if (e.key === 'Escape') closeLightbox();
@@ -2707,7 +2803,7 @@ document.addEventListener('keydown', e => {
     return;
   }
   // 主画廊
-  if (!document.querySelector('.modal-overlay.active') && !editing) {
+  if (!editing) {
     if (e.key === 'ArrowLeft') navFile(-1);
     if (e.key === 'ArrowRight') navFile(1);
   }

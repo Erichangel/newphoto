@@ -6,7 +6,13 @@ import os
 import re
 import json
 import uuid
-from config import SUPPORTED_IMAGE, SUPPORTED_VIDEO, CHAPTER_FILE_ORDER_FILE
+from config import SUPPORTED_IMAGE, SUPPORTED_VIDEO, get_chapter_file_order_file
+from config import config as app_config
+
+
+def _get_file_order_path():
+    """获取当前根目录的文件排序配置路径"""
+    return get_chapter_file_order_file(app_config.root_dir)
 
 
 def _resolve_path(file_path, root_dir):
@@ -184,9 +190,10 @@ def get_files(folder_path, chapter_name=None):
 
 def load_chapter_file_order(chapter_name):
     """加载章节文件排序"""
-    if os.path.exists(CHAPTER_FILE_ORDER_FILE):
+    order_file = _get_file_order_path()
+    if os.path.exists(order_file):
         try:
-            with open(CHAPTER_FILE_ORDER_FILE, 'r', encoding='utf-8') as f:
+            with open(order_file, 'r', encoding='utf-8') as f:
                 orders = json.load(f)
                 return orders.get(chapter_name, [])
         except Exception:
@@ -197,15 +204,16 @@ def load_chapter_file_order(chapter_name):
 def save_chapter_file_order(chapter_name, file_order):
     """保存章节文件排序"""
     orders = {}
-    if os.path.exists(CHAPTER_FILE_ORDER_FILE):
+    order_file = _get_file_order_path()
+    if os.path.exists(order_file):
         try:
-            with open(CHAPTER_FILE_ORDER_FILE, 'r', encoding='utf-8') as f:
+            with open(order_file, 'r', encoding='utf-8') as f:
                 orders = json.load(f)
         except Exception:
             pass
     
     orders[chapter_name] = file_order
-    with open(CHAPTER_FILE_ORDER_FILE, 'w', encoding='utf-8') as f:
+    with open(order_file, 'w', encoding='utf-8') as f:
         json.dump(orders, f, ensure_ascii=False, indent=2)
     return True, None
 
